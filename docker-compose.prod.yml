@@ -1,0 +1,29 @@
+# Stack für Portainer. Den Reverse Proxy (HTTPS) richtest du in Portainer ein.
+#
+# Wichtig: genau eine Instanz laufen lassen. Tempolimit und Cache für die Anfragen an die
+# LVB liegen im Arbeitsspeicher des Prozesses; mehrere Instanzen würden die LVB öfter abfragen.
+#
+# Version: Die Pipeline übergibt den Release-Tag als APP_VERSION an den Stack-Webhook.
+# Ohne APP_VERSION wird "latest" verwendet. Für einen Rollback in Portainer die
+# Stack-Variable APP_VERSION auf einen älteren Tag setzen und neu ausrollen.
+services:
+  lvb-monitor:
+    image: registry.der-taenzer.net/tnz/lvb-monitor:${APP_VERSION:-latest}
+    restart: always
+    environment:
+      PORT: 3000
+      # Optional, Schutz der LVB-Schnittstelle (Standardwerte):
+      # UPSTREAM_RATE: 5     # Anfragen pro Sekunde im Mittel
+      # UPSTREAM_BURST: 10   # kurzzeitig mehr
+      # UPSTREAM_QUEUE: 100  # wartende Anfragen, darüber HTTP 503
+    expose:
+      - "3000"
+    # Je nach Proxy-Setup stattdessen direkt veröffentlichen:
+    # ports:
+    #   - "3000:3000"
+    # Die App schreibt nichts auf die Platte und braucht keine Sonderrechte
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

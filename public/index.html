@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LVB Abfahrten</title>
+<meta name="description" content="Live-Abfahrten an Haltestellen in Leipzig und Umgebung">
+<meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0c10" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c6cff'/%3E%3Cstop offset='1' stop-color='%234f3ee0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='10' y='6.5' width='12' height='14.5' rx='3.5'/%3E%3Cpath d='M10 13.5h12M13 25.5l1.4-4.5M19 25.5l-1.4-4.5'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f3f4f6;
+    --glow: rgba(98, 84, 246, .11);
+    --surface: #ffffff;
+    --surface-2: #eff1f4;
+    --surface-3: #e4e7ec;
+    --group-bg: #dde1e7;         /* Richtungsköpfe: deutlich abgesetzt von Seite und Karte */
+    --group-ink: #4a505c;
+    --tab-active: #ffffff;
+    --text: #0e1014;
+    --muted: #626977;
+    --faint: #a3a9b4;
+    --line: rgba(14, 16, 20, .08);
+    --accent: #5b4cf0;
+    --accent-hover: #4b3be3;
+    --accent-ink: #ffffff;
+    --accent-text: #4d3ee3;
+    --accent-soft: rgba(91, 76, 240, .11);
+    --star: #f59e0b;
+    --ok: #08804a;
+    --late: #c2410c;
+    --late-soft: rgba(194, 65, 12, .10);
+    --bad: #c92a2a;
+    --bad-soft: rgba(201, 42, 42, .09);
+    --shadow: 0 1px 2px rgba(14, 16, 20, .05), 0 8px 28px -10px rgba(14, 16, 20, .14);
+    --shadow-pop: 0 24px 60px -12px rgba(14, 16, 20, .35), 0 0 0 1px rgba(14, 16, 20, .06);
+    --radius: 20px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0c10; --glow: rgba(124, 108, 255, .16); --surface: #15171d; --surface-2: #1e2129;
+      --surface-3: #282c36; --group-bg: #2a2e39; --group-ink: #b9bfcb; --tab-active: #2d313c; --text: #f0f2f5; --muted: #989eab; --faint: #5f6573;
+      --line: rgba(255, 255, 255, .07); --accent: #6c5ef7; --accent-hover: #7d71ff; --accent-ink: #fff;
+      --accent-text: #aaa1ff; --accent-soft: rgba(124, 108, 255, .18); --star: #fbbf24; --ok: #3ddc97;
+      --late: #ff9a52; --late-soft: rgba(255, 154, 82, .15); --bad: #ff7a7a; --bad-soft: rgba(255, 122, 122, .14);
+      --shadow: 0 0 0 1px rgba(255, 255, 255, .06);
+      --shadow-pop: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .09);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0c10; --glow: rgba(124, 108, 255, .16); --surface: #15171d; --surface-2: #1e2129;
+    --surface-3: #282c36; --group-bg: #2a2e39; --group-ink: #b9bfcb; --tab-active: #2d313c; --text: #f0f2f5; --muted: #989eab; --faint: #5f6573;
+    --line: rgba(255, 255, 255, .07); --accent: #6c5ef7; --accent-hover: #7d71ff; --accent-ink: #fff;
+    --accent-text: #aaa1ff; --accent-soft: rgba(124, 108, 255, .18); --star: #fbbf24; --ok: #3ddc97;
+    --late: #ff9a52; --late-soft: rgba(255, 154, 82, .15); --bad: #ff7a7a; --bad-soft: rgba(255, 122, 122, .14);
+    --shadow: 0 0 0 1px rgba(255, 255, 255, .06);
+    --shadow-pop: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .09);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(900px 420px at 50% -180px, var(--glow), transparent 70%) no-repeat, var(--bg);
+    color: var(--text);
+    font: 16px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .ic {
+    width: 1.15em; height: 1.15em; flex: none;
+    fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .ic.fill { fill: currentColor; }
+
+  .app { margin: 0 auto; padding: 0 16px; max-width: 760px; }
+
+  /* Kopfzeile */
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 18px 0 22px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand svg { flex: none; display: block; }
+  .brand-text { display: grid; min-width: 0; line-height: 1.2; }
+  .brand-name { font-weight: 750; font-size: 1.12rem; letter-spacing: -.015em; }
+  /* Live-Status unter "Abfahrten", daneben Aktualisieren */
+  .brand .live { gap: 6px; margin-top: 1px; font-size: .78rem; white-space: nowrap; }
+  .brand .live .dot { width: 7px; height: 7px; }
+  .refresh-btn {
+    display: inline-grid; place-items: center; width: 26px; height: 26px; margin: -4px 0 -4px -2px; padding: 0;
+    border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer;
+  }
+  .refresh-btn:hover { color: var(--text); background: var(--surface-2); }
+  .refresh-btn .ic { width: 15px; height: 15px; }
+  .refresh-btn.spinning .ic { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .top-right { position: relative; margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .actions { display: flex; align-items: center; gap: 8px; }
+  .topbar .burger { display: none; }
+  .clock { font-size: 1.2rem; font-weight: 700; letter-spacing: -.01em; margin-right: 8px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text); font-size: .92rem; font-weight: 600;
+    cursor: pointer; white-space: nowrap; box-shadow: 0 1px 2px rgba(14, 16, 20, .04);
+    transition: background-color .15s, border-color .15s, transform .1s;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary, .btn.on { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+  .btn.primary:hover, .btn.on:hover { background: var(--accent-hover); }
+  .btn .ic { width: 18px; height: 18px; }
+
+  .icon-btn {
+    display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px;
+    border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+    cursor: pointer; transition: background-color .15s, color .15s;
+  }
+  .icon-btn:hover:not(:disabled) { color: var(--text); background: var(--surface-2); }
+  .icon-btn:disabled { opacity: .4; cursor: default; }
+  .icon-btn .ic { width: 19px; height: 19px; }
+  .icon-btn.danger:hover:not(:disabled) { color: var(--bad); background: var(--bad-soft); }
+  .star-btn[aria-pressed="true"] { color: var(--star); }
+  .star-btn[aria-pressed="true"]:hover { color: var(--star); }
+
+  /* Tabs: Segment-Leiste, bleibt beim Scrollen oben */
+  .tabs {
+    position: sticky; top: 10px; z-index: 5;
+    display: flex; gap: 2px; width: max-content; max-width: 100%;
+    overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+    padding: 4px; margin: 0 0 20px; border-radius: 14px;
+    background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line), 0 6px 20px -12px rgba(14, 16, 20, .25);
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 15rem;
+    height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent;
+    color: var(--muted); font-size: .92rem; font-weight: 600; cursor: pointer;
+    transition: background-color .15s, color .15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab .star { width: 14px; height: 14px; color: var(--star); }
+  .tab[aria-selected="true"] {
+    background: var(--tab-active); color: var(--text);
+    box-shadow: 0 1px 3px rgba(14, 16, 20, .10), 0 0 0 1px var(--line);
+  }
+
+  /* Hinweis bei geteiltem Link */
+  .banner {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    padding: 12px 14px 12px 16px; margin-bottom: 18px; border-radius: 16px;
+    background: var(--accent-soft); font-size: .92rem;
+  }
+  .banner > .ic { color: var(--accent-text); width: 20px; height: 20px; }
+  .banner-text { flex: 1 1 220px; }
+  .banner-actions { display: flex; gap: 8px; }
+  .banner .btn { height: 36px; }
+
+  /* Haltestelle */
+  .board.enter { animation: rise .22s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .board-head {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+    column-gap: 8px; margin: 0 2px 16px;
+  }
+  .board-head h2 {
+    margin: 0; font-size: clamp(1.55rem, 1.15rem + 1.6vw, 2.1rem); font-weight: 750;
+    letter-spacing: -.028em; line-height: 1.15; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
+  .head-actions { display: flex; gap: 6px; align-self: start; }
+  .meta-line {
+    grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+    margin-top: 8px; font-size: .85rem;
+  }
+  /* Fußweg direkt hinter dem Namen; bei langen Namen rutscht er in die nächste Zeile */
+  .title-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; min-width: 0; }
+  .title-line h2 { min-width: 0; }
+  .walk-slot { flex: none; }
+  .title-line .walk-chip { height: 28px; padding: 0 11px; font-size: .82rem; transform: translateY(-3px); }
+  .sub {
+    display: inline-block; max-width: 100%; padding: 2px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent-text); font-weight: 600; font-size: .8rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .live { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+  .live-label { font-weight: 650; }
+  .live .dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+  .live[data-state="live"] .live-label { color: var(--ok); }
+  .live[data-state="live"] .dot { background: var(--ok); }
+  .live[data-state="live"] .dot::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%; background: inherit;
+    animation: ping 2s cubic-bezier(0, 0, .2, 1) infinite;
+  }
+  @keyframes ping { 75%, 100% { transform: scale(2.6); opacity: 0; } }
+  .live[data-state="stale"] .live-label { color: var(--late); }
+  .live[data-state="stale"] .dot { background: var(--late); }
+  .live[data-state="error"] .live-label { color: var(--bad); }
+  .live[data-state="error"] .dot { background: var(--bad); }
+
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+  /* Einstellungen je Haltestelle */
+  .edit {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 20px 16px;
+    padding: 20px; margin-bottom: 14px;
+  }
+  .field { display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .field.wide { grid-column: 1 / -1; }
+  .field-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .input {
+    height: 42px; padding: 0 12px; border: 1px solid transparent; border-radius: 11px;
+    background: var(--surface-2); color: var(--text); font-size: 1rem; width: 100%;
+  }
+  .input:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
+  select.input {
+    appearance: none; -webkit-appearance: none; width: auto; min-width: 5.5rem; padding-right: 34px; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23878d99' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+  }
+  .help { font-size: .8rem; color: var(--muted); }
+  .stepper { display: inline-flex; align-items: center; gap: 4px; justify-self: start; }
+  .stepper .input { width: 4rem; padding: 0 6px; text-align: center; -moz-appearance: textfield; }
+  .stepper .input::-webkit-inner-spin-button, .stepper .input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .step {
+    width: 36px; height: 42px; border-radius: 11px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text); font-size: 1.15rem; line-height: 1; cursor: pointer;
+  }
+  .step:hover { background: var(--surface-2); }
+  .stepper .unit-label { margin-left: 4px; color: var(--muted); font-size: .9rem; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--muted); font-size: .86rem; font-weight: 600; cursor: pointer;
+    transition: background-color .15s, color .15s;
+  }
+  .chip:hover { color: var(--text); background: var(--surface-2); }
+  .chip[aria-pressed="true"] {
+    background: var(--accent-soft); color: var(--accent-text);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .chip.line { min-width: 2.9rem; font-weight: 700; }
+  .chip.line.except[aria-pressed="true"] {
+    background: var(--bad-soft); color: var(--bad); text-decoration: line-through;
+    border-color: color-mix(in srgb, var(--bad) 35%, transparent);
+  }
+  .line-add {
+    width: 7rem; height: 32px; padding: 0 13px; border-radius: 999px;
+    border: 1px dashed var(--faint); background: transparent; color: var(--text); font-size: .86rem;
+  }
+  .line-add:focus { outline: none; border: 1px solid var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .seg {
+    display: inline-flex; justify-self: start; gap: 2px; max-width: 100%; overflow-x: auto;
+    padding: 3px; border-radius: 12px; background: var(--surface-2);
+  }
+  .seg button {
+    height: 32px; padding: 0 13px; border: 0; border-radius: 9px; background: transparent;
+    color: var(--muted); font-size: .86rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-pressed="true"] {
+    background: var(--tab-active); color: var(--text);
+    box-shadow: 0 1px 3px rgba(14, 16, 20, .10), 0 0 0 1px var(--line);
+  }
+
+  /* Abfahrten */
+  .list { --pad: 18px; --bw: 3.5rem; --gap: 14px; transition: opacity .3s; }
+  /* jede Richtung ist eine eigene Karte */
+  .rows { display: grid; gap: 12px; }
+  .dir-group { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .board.stale .list { opacity: .6; }
+  .row {
+    position: relative; display: grid; grid-template-columns: var(--bw) minmax(0, 1fr) auto;
+    column-gap: var(--gap); align-items: center; min-height: 68px; padding: 12px var(--pad);
+  }
+  .row + .row::before {
+    content: ""; position: absolute; top: 0; right: var(--pad);
+    left: calc(var(--pad) + var(--bw) + var(--gap)); border-top: 1px solid var(--line);
+  }
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center; justify-self: start;
+    min-width: var(--bw); height: 2.15rem; padding: 0 6px; border-radius: 10px;
+    background: #444b59; color: #fff; font-weight: 750; font-size: 1.02rem; letter-spacing: -.01em; white-space: nowrap;
+  }
+  .badge.bus { border-radius: 999px; }
+  .badge.long { font-size: .8rem; padding: 0 5px; }
+  .dest { min-width: 0; }
+  /* links: Ziel (+ Warnsymbol), darunter nur der Fußweg-Hinweis; rechts: Minuten und Uhrzeit */
+  .dest .name { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 600; font-size: 1.03rem; line-height: 1.25; }
+  .name-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dest .meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; margin-top: 1px;
+    color: var(--muted); font-size: .84rem; line-height: 1.2;
+  }
+  /* Verspätung als kleines Badge hinter dem Ziel */
+  .delay-badge {
+    flex: none; display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 6px;
+    background: var(--bad-soft); color: var(--bad); font-size: .75rem; font-weight: 700; line-height: 1;
+  }
+  .alert-btn {
+    display: inline-grid; place-items: center; flex: none; width: 22px; height: 22px; margin: -2px 0; padding: 0;
+    border: 0; border-radius: 7px; background: none; color: var(--late); cursor: pointer;
+  }
+  .alert-btn:hover, .alert-btn[aria-expanded="true"] { background: var(--late-soft); }
+  .alert-btn .ic { width: 16px; height: 16px; }
+  .alert-text {
+    grid-column: 2 / -1; margin-top: 10px; padding: 9px 12px; border-radius: 12px;
+    background: var(--surface-2); color: var(--muted); font-size: .85rem;
+  }
+  .alert-text strong { color: var(--text); font-weight: 650; }
+  /* eine Zeile: tatsächliche Abfahrtszeit klein (rot = verspätet), dann groß die Minuten, bündig rechts */
+  .when { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; white-space: nowrap; }
+  .when-top { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 3px; min-width: 4.6rem; line-height: 1; }
+  .when .min { font-size: 1.6rem; font-weight: 750; letter-spacing: -.03em; line-height: 1; }
+  .when .min.at { font-size: 1.2rem; letter-spacing: -.01em; }
+  .when .min.late { color: var(--bad); }
+  .when .unit { font-size: .75rem; font-weight: 550; color: var(--muted); }
+  .dep-time { font-size: .82rem; color: var(--muted); }
+  .dep-time.late { color: var(--bad); font-weight: 650; }
+  .dep-time.cancelled { text-decoration: line-through; }
+  .now {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent-text); font-weight: 700; font-size: .9rem;
+  }
+  .now i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: blink 1.2s ease-in-out infinite alternate; }
+  @keyframes blink { to { opacity: .25; } }
+  .cancel-tag {
+    padding: 4px 8px; border-radius: 999px; background: var(--bad-soft); color: var(--bad);
+    font-weight: 700; font-size: .76rem; white-space: nowrap;
+  }
+  .row.missed { opacity: .45; }
+  .row.cancelled .badge { opacity: .4; }
+  .row.cancelled .name-text { text-decoration: line-through; color: var(--muted); }
+
+  /* Liste nach Richtung (Haltepunkt) gruppiert; mit Fußweg je Abfahrt ein Hinweis */
+  .walk-chip {
+    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+    font-size: .8rem; font-weight: 600; cursor: pointer;
+  }
+  .walk-chip:hover { color: var(--text); background: var(--surface-2); }
+  .walk-slot:empty { display: none; }
+  .walk-chip .ic { width: 14px; height: 14px; }
+  .dir-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 9px var(--pad) 8px; background: var(--group-bg);
+    font-size: .78rem; font-weight: 650; color: var(--group-ink);
+  }
+  .dir-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dir-steig { flex: none; font-weight: 550; }
+  .dir-empty { padding: 14px var(--pad); color: var(--muted); font-size: .88rem; }
+  .dir-names { display: grid; gap: 12px; }
+  .dir-name-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 5px 8px; }
+  .dir-name-row .icon-btn { width: 42px; height: 42px; }
+  .dir-name-row.is-hidden .input { color: var(--faint); }
+  .dir-name-row.is-hidden .eye { color: var(--accent-text); background: var(--accent-soft); border-color: transparent; }
+  .dir-hidden-note {
+    justify-self: center; display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px;
+    border: 1px dashed var(--faint); border-radius: 999px; background: transparent;
+    color: var(--muted); font-size: .84rem; font-weight: 600; cursor: pointer;
+  }
+  .dir-hidden-note:hover { color: var(--text); border-style: solid; }
+  .dir-hidden-note .ic { width: 15px; height: 15px; }
+  .dir-name-hint { grid-column: 1 / -1; padding-left: 2px; font-size: .78rem; color: var(--muted); }
+  .walk { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; font-weight: 650; white-space: nowrap; }
+  .walk span { overflow: hidden; text-overflow: ellipsis; }
+  .walk .ic { width: 14px; height: 14px; }
+  .walk.relaxed { color: var(--ok); }
+  .walk.go { color: var(--accent-text); }
+  .walk.hurry { color: var(--late); }
+  .walk.missed { color: var(--muted); font-weight: 550; }
+
+  .empty { padding: 44px 20px; text-align: center; color: var(--muted); font-size: .92rem; }
+  .empty strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 1rem; font-weight: 650; }
+
+  /* Ladezustand: Platzhalterzeilen */
+  .sk { display: block; border-radius: 8px; background: var(--surface-2); animation: shimmer 1s ease-in-out infinite alternate; }
+  .sk-badge { width: var(--bw); height: 2.15rem; border-radius: 10px; }
+  .sk-lines { display: grid; gap: 8px; }
+  .sk-l1 { width: 55%; height: 12px; }
+  .sk-l2 { width: 30%; height: 9px; }
+  .sk-when { width: 2.2rem; height: 22px; }
+  .sk-row:nth-child(2) .sk { animation-delay: .1s; }
+  .sk-row:nth-child(3) .sk { animation-delay: .2s; }
+  .sk-row:nth-child(4) .sk { animation-delay: .3s; }
+  @keyframes shimmer { to { opacity: .4; } }
+
+  /* Leerer Start */
+  .empty-state { padding: 40px 28px 32px; text-align: center; }
+  .empty-art { display: block; margin: 0 auto 22px; width: 220px; max-width: 100%; height: auto; }
+  .ea-card { fill: var(--surface-2); }
+  .ea-bar { fill: var(--faint); opacity: .55; }
+  .ea-num { fill: var(--text); opacity: .75; }
+  .empty-state h2 { margin: 0 0 8px; font-size: 1.55rem; letter-spacing: -.025em; }
+  .empty-state p { margin: 0 auto 22px; max-width: 30rem; color: var(--muted); }
+  .empty-state .btn { height: 44px; padding: 0 20px; font-size: .98rem; }
+
+  .foot { padding: 24px 4px 32px; text-align: center; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+  .foot p { max-width: 34rem; margin: 0 auto 10px; }
+  .foot a { color: inherit; text-underline-offset: 2px; }
+  .foot-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
+  /* kleiner, unauffälliger Hinweiskasten */
+  .foot-note {
+    display: flex; align-items: flex-start; gap: 9px; max-width: 34rem; margin: 0 auto 14px; padding: 10px 14px;
+    border: 1px solid var(--line); border-radius: 12px; text-align: left;
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
+  }
+  .foot-note .ic { width: 15px; height: 15px; margin-top: 1px; color: var(--faint); }
+  .foot .foot-note p { margin: 0; max-width: none; }
+  .foot-wipe { margin-top: 8px; }
+  .link-btn {
+    display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none;
+    color: var(--muted); font-size: .78rem; font-weight: 600; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .link-btn:hover { color: var(--bad); }
+  .link-btn .ic { width: 13px; height: 13px; }
+
+  /* Rückfrage vor dem Löschen */
+  .confirm {
+    width: min(420px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 18px;
+    background: var(--surface); color: var(--text); box-shadow: var(--shadow-pop);
+  }
+  .confirm[open] { animation: pop .16s ease-out; }
+  .confirm::backdrop { background: rgba(10, 11, 14, .4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .confirm-body { padding: 22px; }
+  .confirm h2 { margin: 0 0 8px; font-size: 1.15rem; letter-spacing: -.01em; }
+  .confirm p { margin: 0 0 20px; color: var(--muted); font-size: .92rem; line-height: 1.5; }
+  .confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .btn.danger-btn { background: var(--bad); border-color: transparent; color: #fff; }
+  .btn.danger-btn:hover { background: color-mix(in srgb, var(--bad) 85%, #000); }
+  .foot .foot-ai { margin: 10px auto 0; font-size: .75rem; color: var(--faint); }
+
+  /* Suche */
+  .search {
+    width: min(560px, calc(100vw - 24px)); max-height: min(72vh, 560px);
+    margin: 10vh auto auto; padding: 0; border: 0; border-radius: 20px;
+    background: var(--surface); color: var(--text); box-shadow: var(--shadow-pop); overflow: hidden;
+  }
+  .search[open] { display: flex; flex-direction: column; animation: pop .16s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+  .search::backdrop { background: rgba(10, 11, 14, .4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .search-field { display: flex; align-items: center; gap: 10px; padding: 0 10px 0 18px; border-bottom: 1px solid var(--line); }
+  .search-field > .ic { color: var(--muted); width: 20px; height: 20px; }
+  .search-field input {
+    flex: 1; min-width: 0; height: 60px; border: 0; background: transparent; font-size: 1.08rem; outline: none;
+  }
+  .search-field input::-webkit-search-cancel-button { display: none; }
+  .search-field .icon-btn { border: 0; width: 36px; height: 36px; background: transparent; }
+  #search-results { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+  #search-results:empty { display: none; }
+  #search-results button {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; border: 0;
+    border-radius: 12px; background: none; text-align: left; cursor: pointer;
+  }
+  #search-results button:hover, #search-results button:focus-visible { background: var(--surface-2); outline: none; }
+  .pin { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--surface-2); color: var(--muted); }
+  #search-results button:hover .pin, #search-results button:focus-visible .pin { background: var(--accent-soft); color: var(--accent-text); }
+  .res-text { display: grid; min-width: 0; }
+  .res-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .res-sub { font-size: .82rem; color: var(--muted); }
+  .added { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: .78rem; font-weight: 600; color: var(--accent-text); white-space: nowrap; }
+  .added .ic { width: 14px; height: 14px; }
+  .search .hint { margin: 0; padding: 14px 18px 16px; color: var(--muted); font-size: .88rem; }
+  .search .hint:empty { display: none; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+    max-width: calc(100vw - 32px); padding: 10px 18px; border-radius: 999px;
+    background: var(--text); color: var(--bg); font-size: .9rem; font-weight: 550;
+    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .35); animation: toast-in .2s ease-out;
+  }
+  @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+  @media (max-width: 560px) {
+    .topbar { padding: 14px 0 18px; gap: 10px; }
+    /* Kopfzeilen-Knöpfe wandern ins Burger-Menü */
+    .topbar .burger { display: inline-grid; }
+    .foot-links > span { flex-basis: 100%; } /* Datenquelle eigene Zeile, Impressum + Datenschutz darunter */
+    /* Bearbeiten: Knöpfe in eine eigene Zeile unter den Namen, "Fertig" rechts außen */
+    .board.editing .head-actions { grid-column: 1 / -1; margin-top: 10px; }
+    .board.editing .done-btn { margin-left: auto; }
+    .actions {
+      display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
+      flex-direction: column; align-items: stretch; gap: 2px; min-width: 220px; padding: 6px;
+      border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-pop);
+    }
+    .actions.open { display: flex; }
+    .actions .btn {
+      justify-content: flex-start; width: 100%; height: 44px; padding: 0 12px; gap: 10px;
+      border: 0; box-shadow: none; background: transparent; color: var(--text); font-size: .95rem;
+    }
+    .actions .btn:hover { background: var(--surface-2); }
+    .actions .btn.primary, .actions .btn.on { background: transparent; color: var(--accent-text); }
+    .actions .btn.primary:hover, .actions .btn.on:hover { background: var(--accent-soft); }
+    .clock { font-size: 1.05rem; margin-right: 2px; }
+    .edit { grid-template-columns: auto minmax(0, 1fr); column-gap: 28px; padding: 16px; }
+    .field.name { grid-column: 1 / -1; }
+    .list { --pad: 14px; --bw: 2.75rem; --gap: 10px; }
+    .badge { height: 2rem; font-size: .95rem; }
+    /* schmale Zeitspalte, damit das Ziel mehr Platz hat */
+    .when { gap: 6px; }
+    .when-top { min-width: 4.25rem; }
+    .dep-time { font-size: .78rem; }
+    .now { padding: 3px 8px; gap: 5px; font-size: .8rem; }
+    .cancel-tag { padding: 3px 6px; font-size: .72rem; }
+    .badge.long { font-size: .72rem; }
+    .sk-badge { height: 2rem; }
+    .when .min { font-size: 1.45rem; }
+    .board-head { margin-bottom: 14px; }
+  }
+  @media (max-width: 370px) {
+    .clock { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="logo-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#4f3ee0"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#logo-g)"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="6.5" width="12" height="14.5" rx="3.5"/><path d="M10 13.5h12M13 25.5l1.4-4.5M19 25.5l-1.4-4.5"/></g><circle cx="13.6" cy="17.4" r="1.1" fill="#fff"/><circle cx="18.4" cy="17.4" r="1.1" fill="#fff"/></svg>
+      <div class="brand-text">
+        <span class="brand-name">LVB Abfahrten</span>
+        <span class="live" id="live" data-state="loading" hidden><i class="dot"></i><span class="live-label">Lädt …</span><span class="live-time"></span><button class="refresh-btn" id="refresh" type="button" title="Jetzt aktualisieren" aria-label="Jetzt aktualisieren" data-icon="refresh"></button></span>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="clock" id="clock" aria-label="Uhrzeit"></div>
+      <button class="icon-btn burger" id="menu-btn" type="button" aria-expanded="false" aria-controls="menu" aria-label="Menü" data-icon="menu"></button>
+      <div class="actions" id="menu">
+        <button class="btn primary" id="add" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="search" data-icon="plus"><span class="btn-label">Haltestelle</span></button>
+        <button class="btn" id="share" type="button" data-icon="share"><span class="btn-label">Teilen</span></button>
+        <button class="btn" id="edit" type="button"></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden data-icon="link">
+    <span class="banner-text">Du siehst eine geteilte Auswahl. Deine gespeicherten Haltestellen bleiben unverändert.</span>
+    <div class="banner-actions">
+      <button class="btn primary" id="adopt" type="button">Übernehmen</button>
+      <button class="btn" id="mine" type="button">Meine Haltestellen</button>
+    </div>
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Haltestellen" hidden></nav>
+
+  <main id="boards"></main>
+
+  <footer class="foot">
+    <div class="foot-note" role="note" data-icon="info"><p>Deine Auswahl und Einstellungen bleiben auf diesem Gerät gespeichert. Über den Link kannst du dein Setup mit anderen teilen. Vom Seitenbetreiber werden keine personenbezogenen Daten gespeichert oder verarbeitet.</p></div>
+    <nav class="foot-links" aria-label="Quellen und Rechtliches">
+      <span>Datenquelle: <a href="https://stationboard.l.de/" target="_blank" rel="noopener">LVB Stationboard</a></span>
+      <a href="https://der-taenzer.net/impressum" target="_blank" rel="noopener">Impressum</a>
+      <a href="https://der-taenzer.net/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
+    </nav>
+    <div class="foot-wipe"><button class="link-btn" id="wipe" type="button" aria-haspopup="dialog" data-icon="trash">Lokale Daten löschen</button></div>
+    <p class="foot-ai"><span class="app-version">Version __APP_VERSION__</span> · Diese Seite wurde mit Unterstützung von KI entwickelt.</p>
+  </footer>
+</div>
+
+<dialog class="search" id="search" aria-label="Haltestelle hinzufügen">
+  <div class="search-field" data-icon="search">
+    <input id="search-input" type="search" placeholder="Haltestelle suchen, z. B. Augustusplatz" autocomplete="off" autofocus aria-label="Haltestelle suchen" aria-controls="search-results">
+    <button class="icon-btn" id="search-close" type="button" aria-label="Schließen" data-icon="x"></button>
+  </div>
+  <ul id="search-results"></ul>
+  <p class="hint" id="search-hint"></p>
+</dialog>
+
+<dialog class="confirm" id="wipe-dialog" aria-labelledby="wipe-title" aria-describedby="wipe-text">
+  <div class="confirm-body">
+    <h2 id="wipe-title">Lokale Daten löschen?</h2>
+    <p id="wipe-text">Alle Haltestellen und Einstellungen werden von diesem Gerät gelöscht. Links, die du geteilt oder als Lesezeichen gespeichert hast, funktionieren weiter.</p>
+    <div class="confirm-actions">
+      <button class="btn" id="wipe-cancel" type="button">Abbrechen</button>
+      <button class="btn danger-btn" id="wipe-ok" type="button" data-icon="trash">Löschen</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'lvb-monitor.setup.v2';
+  const POLL_MS = 30_000;       // Daten neu laden
+  const RENDER_MS = 5_000;      // Countdown aktualisieren
+  const REFRESH_AFTER_MS = 20_000;
+  const STALE_MS = 3 * 60_000;
+  const DEFAULT_ROWS = 8;
+  const ROW_CHOICES = [3, 5, 8, 10, 15, 20];
+  // Kürzel -> Wert für die LVB-Schnittstelle -> Anzeige
+  const TYPES = [['t', 'tram', 'Tram'], ['b', 'bus', 'Bus'], ['s', 'sbahn', 'S-Bahn'], ['z', 'bahn', 'Zug'], ['r', 'rufbus', 'Rufbus']];
+  const ALL_TYPES = TYPES.map((t) => t[0]).join('');
+  const LINE_MODES = ['all', 'only', 'except'];
+  const MAX_LINES = 60;
+  const MAX_WALK = 60;          // Fußweg in Minuten (0 = aus)
+  const MAX_DIRS = 20;          // eigene Richtungsnamen je Haltestelle
+  const MAX_DIR_NAME = 60;
+  const DIR_ID_RE = /^\d{7}$/;  // Haltepunkt-ID (z. B. 1016801), nur solche lassen sich benennen
+  const GO_WINDOW = 2;          // weniger Puffer als das: "Jetzt losgehen"
+  const HURRY_SHARE = 0.3;      // bis 30 % schneller als sonst: "Beeilen", darüber: nicht zu schaffen
+  const SEARCH_HINT = 'Name der Haltestelle eingeben';
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmtTime = (ms) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
+
+  // Symbole (Strichzeichnungen, 24×24), eingebettet, nichts wird extern geladen.
+  // Bis auf "star" stammen die Pfade aus Lucide (https://lucide.dev), teils leicht vereinfacht.
+  // Herkunft (Name hier → Lucide-Icon): plus → plus, share → share, sliders → sliders-horizontal,
+  // check → check, left → chevron-left, right → chevron-right, trash → trash-2, search → search,
+  // pin → map-pin, alert → triangle-alert, link → link, x → x, reset → rotate-ccw,
+  // refresh → refresh-cw, menu → menu, info → info, eye → eye, eyeOff → eye-off, walk → footprints.
+  // "star" ist eine eigene Zeichnung.
+  /*
+   * Lucide – Lizenz (https://github.com/lucide-icons/lucide/blob/main/LICENSE):
+   *
+   * ISC License
+   *
+   * Copyright (c) 2026 Lucide Icons and Contributors
+   *
+   * Permission to use, copy, modify, and/or distribute this software for any
+   * purpose with or without fee is hereby granted, provided that the above
+   * copyright notice and this permission notice appear in all copies.
+   *
+   * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+   *
+   * ---
+   *
+   * Von den hier verwendeten Icons stammen check, chevron-left, chevron-right,
+   * info, link, plus, search, share, trash-2, triangle-alert (alert-triangle)
+   * und x ursprünglich aus dem Feather-Projekt:
+   *
+   * The MIT License (MIT) (for the icons listed above)
+   *
+   * Copyright (c) 2013-present Cole Bemis
+   *
+   * Permission is hereby granted, free of charge, to any person obtaining a copy
+   * of this software and associated documentation files (the "Software"), to deal
+   * in the Software without restriction, including without limitation the rights
+   * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   * copies of the Software, and to permit persons to whom the Software is
+   * furnished to do so, subject to the following conditions:
+   *
+   * The above copyright notice and this permission notice shall be included in all
+   * copies or substantial portions of the Software.
+   *
+   * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   * SOFTWARE.
+   */
+  const ICONS = {
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    share: '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="m16 6-4-4-4 4M12 2v13"/>',
+    sliders: '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    star: '<path d="M12 2.6l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.45l-5.8 3.05 1.1-6.45-4.7-4.6 6.5-.95z"/>',
+    left: '<path d="m15 18-6-6 6-6"/>',
+    right: '<path d="m9 18 6-6-6-6"/>',
+    trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+    eye: '<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
+    eyeOff: '<path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="m2 2 20 20"/>',
+    walk: '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4M4 13h4"/>',
+  };
+  const icon = (name, cls = '') => `<svg class="ic${cls ? ` ${cls}` : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+  for (const el of document.querySelectorAll('[data-icon]')) el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon));
+
+  // -------------------------------------------------------------------------
+  // Kanonische Formen, damit gleiches Setup immer denselben Link ergibt
+
+  const canonTypes = (s = '') => {
+    const c = [...ALL_TYPES].filter((x) => s.includes(x)).join('');
+    return c === ALL_TYPES ? '' : c; // alle = keins = kein Filter
+  };
+  const clampRows = (v) => {
+    const n = parseInt(v, 10);
+    return n >= 1 && n <= 30 ? n : DEFAULT_ROWS;
+  };
+  const normLine = (l) => String(l ?? '').trim().toUpperCase().slice(0, 12);
+  const canonLines = (lines) => [...new Set(lines.map(normLine).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'de', { numeric: true }))
+    .slice(0, MAX_LINES);
+  const clampWalk = (v) => {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? Math.min(MAX_WALK, Math.max(0, n)) : 0;
+  };
+  const fallbackName = (id) => `Haltestelle ${id}`;
+  const canonDirNames = (obj) => Object.entries(obj ?? {})
+    .map(([id, name]) => [id, String(name ?? '').trim().slice(0, MAX_DIR_NAME)])
+    .filter(([id, name]) => DIR_ID_RE.test(id) && name)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(0, MAX_DIRS);
+  const canonHidden = (list) => [...new Set(list ?? [])].filter((id) => DIR_ID_RE.test(id)).sort().slice(0, MAX_DIRS);
+  const newStation = (id, name) => ({
+    id, name, types: '', rows: DEFAULT_ROWS, lineMode: 'all', lines: [], walk: 0, dirNames: {}, hiddenDirs: [], fav: false,
+  });
+
+  // -------------------------------------------------------------------------
+  // Setup <-> kompakter Link-Code (Base64url eines kleinen Binärformats).
+  // Kein Hash im kryptografischen Sinn: ohne Server-Speicher muss der Link
+  // das Setup selbst enthalten. Er ist nur kompakt, nicht geheim.
+  //
+  // Byte 0: Formatversion (4; Versionen 1–3 werden weiter gelesen)
+  // Byte 1: Index des Favoriten (ab Version 2; Version 1 = erste Haltestelle)
+  // Danach je Haltestelle:
+  //   3 Byte ID (uint24) | 1 Byte Flags | 1 Byte Extra (ab Version 3)
+  //   | [1 Byte Zeilen] | 1 Byte Länge + Name (UTF-8)
+  //   | [1 Byte Anzahl + je Linie: 1 Byte Länge + Text]
+  //   | [1 Byte Anzahl + je Richtung: 3 Byte Haltepunkt-ID + 1 Byte Länge + Name]
+  //   | [1 Byte Anzahl + je ausgeblendeter Richtung: 3 Byte Haltepunkt-ID]
+  // Flags: Bit 0–4 Verkehrsmittel (t,b,s,z,r; 0 = alle), Bit 5–6 Linienmodus
+  //        (0 alle, 1 nur, 2 alle außer), Bit 7 Zeilen weicht vom Standard ab.
+  // Extra: Bit 0–5 Fußweg in min (0 = aus), Bit 6 eigene Richtungsnamen folgen,
+  //        Bit 7 ausgeblendete Richtungen folgen (in Version 3 war das ganze Byte der Fußweg).
+
+  const FORMAT = 4;
+  const utf8 = new TextEncoder();
+  const fromUtf8 = new TextDecoder('utf-8', { fatal: true });
+
+  function utf8Max(str, maxBytes) {
+    let b = utf8.encode(str);
+    while (b.length > maxBytes) { str = [...str].slice(0, -1).join(''); b = utf8.encode(str); }
+    return b;
+  }
+  const toB64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  function fromB64url(s) {
+    if (!/^[A-Za-z0-9_-]+$/.test(s)) throw new Error('kein Base64url');
+    return Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+  }
+
+  function encodeSetup(list) {
+    if (!list.length) return '';
+    const fav = list.findIndex((s) => s.fav);
+    const out = [FORMAT, fav > 0 && fav < 256 ? fav : 0];
+    for (const s of list) {
+      const id = Number(s.id);
+      const lines = s.lineMode === 'all' ? [] : canonLines(s.lines);
+      const mode = lines.length ? LINE_MODES.indexOf(s.lineMode) : 0;
+      const mask = TYPES.reduce((m, [c], bit) => (s.types.includes(c) ? m | (1 << bit) : m), 0);
+      const flags = mask | (mode << 5) | (s.rows !== DEFAULT_ROWS ? 128 : 0);
+      const dirs = canonDirNames(s.dirNames);
+      const hidden = canonHidden(s.hiddenDirs);
+      const extra = clampWalk(s.walk) | (dirs.length ? 64 : 0) | (hidden.length ? 128 : 0);
+      out.push((id >> 16) & 255, (id >> 8) & 255, id & 255, flags, extra);
+      if (flags & 128) out.push(s.rows);
+      const name = utf8Max(s.name, 255);
+      out.push(name.length, ...name);
+      if (mode) {
+        out.push(lines.length);
+        for (const l of lines) { const b = utf8Max(l, 12); out.push(b.length, ...b); }
+      }
+      if (dirs.length) {
+        out.push(dirs.length);
+        for (const [stop, label] of dirs) {
+          const n = Number(stop);
+          const b = utf8Max(label, 160);
+          out.push((n >> 16) & 255, (n >> 8) & 255, n & 255, b.length, ...b);
+        }
+      }
+      if (hidden.length) {
+        out.push(hidden.length);
+        for (const stop of hidden) { const n = Number(stop); out.push((n >> 16) & 255, (n >> 8) & 255, n & 255); }
+      }
+    }
+    return toB64url(out);
+  }
+
+  function decodeSetup(str) {
+    const list = [];
+    let bytes;
+    try { bytes = fromB64url(str); } catch { return list; }
+    const version = bytes[0];
+    if (!(version >= 1 && version <= FORMAT)) return list;
+    let p = 1;
+    const take = (n) => {
+      if (p + n > bytes.length) throw new Error('abgeschnitten');
+      const part = bytes.subarray(p, p + n);
+      p += n;
+      return part;
+    };
+    let fav = 0;
+    try {
+      if (version >= 2) fav = take(1)[0];
+      while (p < bytes.length) {
+        const [a, b, c, flags] = take(4);
+        const id = (a << 16) | (b << 8) | c;
+        const extra = version >= 3 ? take(1)[0] : 0;
+        const walk = clampWalk(version >= 4 ? extra & 63 : extra);
+        const rows = flags & 128 ? clampRows(take(1)[0]) : DEFAULT_ROWS;
+        const name = fromUtf8.decode(take(take(1)[0])).trim().slice(0, 80);
+        const mode = LINE_MODES[(flags >> 5) & 3] ?? 'all';
+        const lines = [];
+        if (mode !== 'all') {
+          for (let n = take(1)[0]; n > 0; n--) lines.push(fromUtf8.decode(take(take(1)[0])));
+        }
+        const dirNames = {};
+        if (version >= 4 && extra & 64) {
+          for (let n = take(1)[0]; n > 0; n--) {
+            const [x, y, z] = take(3);
+            const stop = String((x << 16) | (y << 8) | z).padStart(7, '0');
+            const label = fromUtf8.decode(take(take(1)[0])).trim().slice(0, MAX_DIR_NAME);
+            if (label && DIR_ID_RE.test(stop)) dirNames[stop] = label;
+          }
+        }
+        const hiddenDirs = [];
+        if (version >= 4 && extra & 128) {
+          for (let n = take(1)[0]; n > 0; n--) {
+            const [x, y, z] = take(3);
+            hiddenDirs.push(String((x << 16) | (y << 8) | z).padStart(7, '0'));
+          }
+        }
+        if (id > 9_999_999) continue;
+        const sid = String(id).padStart(7, '0');
+        list.push({
+          ...newStation(sid, name || fallbackName(sid)),
+          types: canonTypes(TYPES.filter((_, bit) => flags & (1 << bit)).map((t) => t[0]).join('')),
+          rows,
+          lineMode: lines.length ? mode : 'all',
+          lines: canonLines(lines),
+          walk,
+          dirNames,
+          hiddenDirs: canonHidden(hiddenDirs),
+        });
+      }
+    } catch { /* kaputter Rest: alles bis dahin Gültige behalten */ }
+    if (list.length) (list[fav] ?? list[0]).fav = true;
+    return list;
+  }
+
+  // localStorage kann fehlen (privater Modus, gesperrte Website-Daten) – dann nur per Link.
+  const store = {
+    load() { try { return decodeSetup(localStorage.getItem(STORAGE_KEY) ?? ''); } catch { return []; } },
+    save(list) { try { localStorage.setItem(STORAGE_KEY, encodeSetup(list)); } catch { /* egal */ } },
+  };
+
+  // -------------------------------------------------------------------------
+  // Zustand
+
+  const state = {
+    stations: [],          // {id, name, types, rows, lineMode, lines, walk, fav}
+    active: null,          // gerade angezeigte Haltestelle (nicht gespeichert)
+    shared: false,         // fremder Link, der vom eigenen Setup abweicht
+    editing: false,
+    feeds: new Map(),      // "<id>|<types>" -> {data, lastOk, error, inflight, lines}
+    openAlerts: new Set(),
+  };
+  const feedKey = (s) => `${s.id}|${s.types}`;
+  const favorite = () => state.stations.find((s) => s.fav) ?? state.stations[0] ?? null;
+  const current = () => (state.stations.includes(state.active) ? state.active : favorite());
+  function setFavorite(s) {
+    for (const x of state.stations) x.fav = x === s;
+  }
+  function ensureFavorite() {
+    if (state.stations.length && !state.stations.some((s) => s.fav)) state.stations[0].fav = true;
+  }
+
+  function writeHash() {
+    const h = encodeSetup(state.stations);
+    history.replaceState(null, '', location.pathname + location.search + (h ? `#${h}` : ''));
+  }
+
+  // URL lesen: Link mit Setup -> anzeigen; ohne -> eigenes Setup laden.
+  // Angezeigt wird beim Öffnen immer der Favorit.
+  function applyLocation() {
+    const fromHash = decodeSetup(location.hash.slice(1));
+    const saved = store.load();
+    if (fromHash.length) {
+      state.stations = fromHash;
+      if (!saved.length) store.save(fromHash); // noch nichts gespeichert: einfach übernehmen
+      state.shared = saved.length > 0 && encodeSetup(saved) !== encodeSetup(fromHash);
+    } else {
+      state.stations = saved;
+      state.shared = false;
+    }
+    if (!state.stations.length) state.editing = false;
+    state.active = favorite();
+    state.openAlerts.clear();
+    writeHash(); // URL normalisieren, damit sie immer das angezeigte Setup enthält
+  }
+
+  // Jede Änderung durch den Nutzer: speichern, URL aktualisieren.
+  function persist() {
+    ensureFavorite();
+    store.save(state.stations);
+    state.shared = false;
+    writeHash();
+    renderChrome();
+  }
+  function commit() {
+    if (!state.stations.length) state.editing = false;
+    persist();
+    renderLayout();
+    load();
+  }
+
+  // -------------------------------------------------------------------------
+  // Daten: geladen wird nur die gerade angezeigte Haltestelle.
+
+  // force: auch laden, wenn die letzten Daten noch frisch sind (Aktualisieren-Knopf).
+  // Gibt das laufende Laden als Promise zurück.
+  function load(force = false) {
+    const keys = new Set(state.stations.map(feedKey));
+    for (const k of state.feeds.keys()) if (!keys.has(k)) state.feeds.delete(k);
+    const s = current();
+    if (!s) return Promise.resolve();
+    const key = feedKey(s);
+    let f = state.feeds.get(key);
+    if (!f) state.feeds.set(key, (f = { data: null, lastOk: 0, error: null, inflight: null, lines: new Set(), dirs: new Map() }));
+    if (f.inflight) return f.inflight;
+    if (!force && Date.now() - f.lastOk < REFRESH_AFTER_MS) return Promise.resolve();
+    const qs = new URLSearchParams({ stop: s.id });
+    const types = TYPES.filter(([c]) => s.types.includes(c)).map((t) => t[1]).join('_');
+    if (types) qs.set('types', types);
+    f.inflight = fetch(`/api/departures?${qs}`)
+      .then(async (r) => {
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(body.error || `HTTP ${r.status}`);
+        f.data = body;
+        f.lastOk = Date.now();
+        f.error = null;
+        for (const d of body.departures) f.lines.add(normLine(d.line)); // für die Linienauswahl
+      })
+      .catch((e) => { f.error = e.message || 'Fehler'; })
+      .finally(() => { f.inflight = null; renderBoards(); });
+    return f.inflight;
+  }
+
+  function lineFilter(s) {
+    if (s.lineMode === 'all' || !s.lines.length) return null;
+    const set = new Set(s.lines);
+    return s.lineMode === 'only' ? (d) => set.has(normLine(d.line)) : (d) => !set.has(normLine(d.line));
+  }
+
+  // -------------------------------------------------------------------------
+  // Darstellung
+
+  function inkFor(hex) {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#0e1014' : '#fff';
+  }
+
+  // Nur die tatsächliche Abfahrtszeit: grau, bei Verspätung rot.
+  // Geplante Zeit bzw. "keine Echtzeitdaten" stehen im Tooltip.
+  function depTimeInfo(d) {
+    const min = d.delay === null ? 0 : Math.round(d.delay / 60);
+    const title = d.delay === null ? 'Keine Echtzeitdaten – Fahrplanzeit'
+      : min > 0 ? `${min} min später, geplant ${fmtTime(d.planned)}`
+        : min < 0 ? `${-min} min früher, geplant ${fmtTime(d.planned)}`
+          : 'pünktlich';
+    return { late: min > 0, delayMin: min, title };
+  }
+
+  // Eine Zeile: Uhrzeit klein, dann groß die Minuten (bündig rechts).
+  // Ausgefallen: geplante Uhrzeit durchgestrichen, dann "Fällt aus".
+  function whenHtml(d, now) {
+    if (d.cancelled) {
+      return `<span class="dep-time cancelled" title="Fällt aus, geplant ${fmtTime(d.planned)}">${fmtTime(d.planned)}</span><span class="when-top"><span class="cancel-tag">Fällt aus</span></span>`;
+    }
+    const { late, title } = depTimeInfo(d);
+    const min = Math.floor((d.when - now) / 60_000);
+    // ab 60 min steht groß die Uhrzeit, eine zweite Angabe wäre doppelt
+    if (min >= 60) return `<span class="when-top"><span class="min at${late ? ' late' : ''}" title="${title}">${fmtTime(d.when)}</span></span>`;
+    const top = min <= 0 ? '<span class="now"><i></i>jetzt</span>' : `<span class="min">${min}</span><span class="unit">min</span>`;
+    return `<span class="dep-time${late ? ' late' : ''}" title="${title}">${fmtTime(d.when)}</span><span class="when-top">${top}</span>`;
+  }
+
+  // Linienkürzel in Linienfarbe; Busse rund
+  function badgeHtml(d, cls = 'badge') {
+    const style = d.color ? ` style="background:${d.color};color:${inkFor(d.color)}"` : '';
+    return `<span class="${cls}${d.type === 'Bus' ? ' bus' : ''}${d.line.length > 3 ? ' long' : ''}"${style} title="${esc(d.type)}">${esc(d.line)}</span>`;
+  }
+
+  // Schaffe ich die Abfahrt zu Fuß? leave = Minuten, bis ich spätestens losgehen muss
+  // (negativ = eigentlich schon zu spät, mit schnellerem Gehen evtl. noch drin).
+  function catchInfo(d, now, walk) {
+    const leave = (d.when - now) / 60_000 - walk;
+    const kind = leave >= GO_WINDOW ? 'relaxed'
+      : leave >= 0 ? 'go'
+        : leave >= -walk * HURRY_SHARE ? 'hurry'
+          : 'missed';
+    return { d, leave, kind };
+  }
+
+  // Zeile: links Ziel (mit ⚠, falls es einen Hinweis gibt) und darunter nur der Fußweg-Hinweis,
+  // rechts Minuten und Uhrzeit. Der Steig steht im Gruppenkopf.
+  function rowHtml(d, now, walk) {
+    const key = `${d.line}|${d.planned}|${d.stopId}`;
+    const alert = d.alerts.find((a) => a.text || a.title);
+    const open = alert && state.openAlerts.has(key);
+    const alertText = alert && (alert.title && alert.text && alert.title !== alert.text
+      ? `<strong>${esc(alert.title)}</strong> · ${esc(alert.text)}` : esc(alert.text || alert.title));
+    const alertTitle = esc(alert?.title || alert?.text || 'Hinweis');
+    const reach = walk > 0 && !d.cancelled ? catchInfo(d, now, walk) : null;
+    const meta = reach ? walkHtml(reach, walk) : '';
+    const { delayMin, title: delayTitle } = depTimeInfo(d);
+    const delayBadge = !d.cancelled && delayMin > 0 ? `<span class="delay-badge" title="${delayTitle}">+${delayMin}</span>` : '';
+    return `
+      <div class="row${d.cancelled ? ' cancelled' : ''}${reach?.kind === 'missed' ? ' missed' : ''}">
+        ${badgeHtml(d)}
+        <div class="dest">
+          <div class="name"><span class="name-text">${esc(d.destination)}</span>${delayBadge}${alert
+            ? `<button class="alert-btn" type="button" data-alert="${esc(key)}" aria-expanded="${open}" title="${alertTitle}" aria-label="Hinweis: ${alertTitle}">${icon('alert')}</button>` : ''}</div>
+          ${meta ? `<div class="meta">${meta}</div>` : ''}
+        </div>
+        <div class="when">${whenHtml(d, now)}</div>
+        ${open ? `<div class="alert-text">${alertText}</div>` : ''}
+      </div>`;
+  }
+
+  // Richtung = Haltepunkt (Bahnsteig/Bussteig). Jeder Haltepunkt einer Haltestelle
+  // bedient eine Fahrtrichtung, deshalb klappt das ohne Zieleingabe.
+  // Beschriftet wird mit den häufigsten Zielen der nächsten Stunde.
+  const shortHeadsign = (h) => String(h ?? '').replace(/\s+über\s.*$/i, '').replace(/\s+/g, ' ').trim();
+  function directionLabel(deps) {
+    const count = new Map();
+    for (const d of deps) {
+      const h = shortHeadsign(d.destination);
+      if (h) count.set(h, (count.get(h) ?? 0) + 1);
+    }
+    return [...count].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([h]) => h).join(', ');
+  }
+
+  // Fußweg-Hinweis je Abfahrt: sichtbar kurz, Details im Tooltip
+  function walkHtml(x, walk) {
+    const [text, title] = {
+      relaxed: () => [`los in ${Math.floor(x.leave)} min`, `Los um ${fmtTime(x.d.when - walk * 60_000)}`],
+      go: () => ['jetzt los', 'Im normalen Tempo reicht es'],
+      hurry: () => ['beeilen', walk / (walk + x.leave) <= 1.15 ? 'Zügig gehen, dann reicht es' : 'Nur im Laufschritt zu schaffen'],
+      missed: () => ['nicht zu schaffen', 'Zu Fuß nicht mehr zu schaffen'],
+    }[x.kind]();
+    return `<span class="walk ${x.kind}" title="${title}${x.d.delay === null && x.kind !== 'missed' ? ' (laut Fahrplan)' : ''}">${icon('walk')}<span>${text}</span></span>`;
+  }
+
+  // Abfahrten je Haltepunkt (= Richtung), fest nach Haltepunkt sortiert
+  function groupByStop(list) {
+    const groups = new Map();
+    for (const d of list) {
+      const k = d.stopId || '';
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(d);
+    }
+    return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([stop, deps]) => ({
+      stop,
+      deps,
+      label: directionLabel(deps.filter((d) => !d.cancelled)),
+      platform: deps.find((d) => d.platform)?.platform ?? null,
+    }));
+  }
+  const autoDirName = (g) => (g.label ? `Richtung ${g.label}` : 'Richtung unbekannt');
+
+  // Liste je Richtung; die Zeilenzahl wird auf die Richtungen verteilt (mindestens zwei je
+  // Richtung). Mit Fußweg bleibt vor der ersten erreichbaren Abfahrt nur die zuletzt
+  // verpasste stehen (ausgegraut), ältere fallen weg.
+  function groupedRowsHtml(s, groups, now) {
+    const per = Math.max(2, Math.ceil(s.rows / groups.length));
+    const reachable = (d) => !d.cancelled && catchInfo(d, now, s.walk).kind !== 'missed';
+    return groups.map((g) => {
+      let shown = g.deps.slice(0, per);
+      let none = false;
+      if (s.walk) {
+        const first = g.deps.findIndex(reachable);
+        const from = first === -1 ? g.deps.length : first;
+        shown = [...g.deps.slice(0, from).filter((d) => !d.cancelled).slice(-1), ...g.deps.slice(from, from + per)];
+        none = first === -1;
+      }
+      const own = s.dirNames[g.stop];
+      return `
+        <div class="dir-group">
+          <div class="dir-head"><span class="dir-name"${own ? ` title="${esc(autoDirName(g))}"` : ''}>${esc(own || autoDirName(g))}</span>${g.platform ? `<span class="dir-steig">Steig ${esc(g.platform)}</span>` : ''}</div>
+          ${shown.map((d) => rowHtml(d, now, s.walk)).join('')}
+          ${none ? '<div class="dir-empty">In der nächsten Stunde nicht mehr zu schaffen</div>' : ''}
+        </div>`;
+    }).join('');
+  }
+
+  const SKELETON = `<div class="loading card" role="status" aria-label="Lade Abfahrten">${
+    '<div class="row sk-row"><span class="sk sk-badge"></span><span class="sk-lines"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span><span class="sk sk-when"></span></div>'.repeat(4)}</div>`;
+
+  // Kurzinfo neben dem Namen: aktive Filter
+  function filterSummary(s) {
+    const parts = [];
+    if (s.types) parts.push(TYPES.filter(([c]) => s.types.includes(c)).map((t) => t[2]).join(', '));
+    if (s.lineMode !== 'all' && s.lines.length) {
+      parts.push(s.lineMode === 'only'
+        ? `${s.lines.length === 1 ? 'Linie' : 'Linien'} ${s.lines.join(', ')}`
+        : `ohne ${s.lines.join(', ')}`);
+    }
+    return parts.join(' · ');
+  }
+
+  const LINE_HELP = {
+    all: 'Alle Linien werden angezeigt.',
+    only: 'Nur die markierten Linien werden angezeigt. Neue Linien bleiben ausgeblendet.',
+    except: 'Markierte Linien werden ausgeblendet. Alle anderen werden angezeigt.',
+  };
+
+  function lineChoices(s) {
+    return canonLines([...(state.feeds.get(feedKey(s))?.lines ?? []), ...s.lines]);
+  }
+  function lineChipsHtml(s, choices) {
+    if (!choices.length) return '<span class="help">Linien erscheinen, sobald Abfahrten geladen sind.</span>';
+    const sel = new Set(s.lines);
+    return choices.map((l) =>
+      `<button type="button" class="chip line ${s.lineMode}" data-act="line" data-line="${esc(l)}" aria-pressed="${sel.has(l)}">${esc(l)}</button>`).join('');
+  }
+
+  // Richtungen zum Benennen: zuletzt gesehene Haltepunkte plus solche mit eigenem Namen
+  function dirChoices(s) {
+    const known = state.feeds.get(feedKey(s))?.dirs ?? new Map();
+    return [...new Set([...known.keys(), ...Object.keys(s.dirNames), ...s.hiddenDirs])].filter((id) => DIR_ID_RE.test(id)).sort()
+      .map((id) => ({ id, label: known.get(id)?.label ?? '', platform: known.get(id)?.platform ?? null }));
+  }
+  const dirSig = (choices) => choices.map((c) => `${c.id}:${c.label}:${c.platform ?? ''}`).join('|');
+  // Im Feld steht der Standard (automatische Beschriftung) und lässt sich direkt überschreiben.
+  // ↺ stellt den Standard wieder her, das Auge blendet die Richtung aus oder ein.
+  // Der Hinweis darunter erscheint nur, wenn etwas vom Standard abweicht.
+  const dirHint = (own, hidden, std) => [hidden && 'Ausgeblendet', own && `Standard: ${std}`].filter(Boolean).join(' · ');
+  const eyeLabel = (hidden) => (hidden ? 'Richtung einblenden' : 'Richtung ausblenden');
+  function dirNamesHtml(s, choices) {
+    if (!choices.length) return '<span class="help">Richtungen erscheinen, sobald Abfahrten geladen sind.</span>';
+    return choices.map((c) => {
+      const auto = c.label ? `Richtung ${c.label}` : '';
+      const own = s.dirNames[c.id];
+      const hidden = s.hiddenDirs.includes(c.id);
+      const std = `${auto || 'gerade keine Abfahrten an diesem Steig'}${c.platform ? ` · Steig ${c.platform}` : ''}`;
+      const hint = dirHint(own, hidden, std);
+      return `
+        <div class="dir-name-row${hidden ? ' is-hidden' : ''}" data-stop="${c.id}" data-std="${esc(std)}">
+          <input class="input" type="text" data-act="dirname" data-stop="${c.id}" data-auto="${esc(auto)}" value="${esc(own ?? auto)}"
+            placeholder="${esc(auto || 'Name der Richtung')}" maxlength="${MAX_DIR_NAME}" autocomplete="off" aria-label="Name für ${esc(std)}">
+          <button class="icon-btn" type="button" data-act="dirname-reset" data-stop="${c.id}"${own ? '' : ' disabled'}
+            title="Standard wiederherstellen" aria-label="Standard wiederherstellen">${icon('reset')}</button>
+          <button class="icon-btn eye" type="button" data-act="dir-hide" data-stop="${c.id}"
+            title="${eyeLabel(hidden)}" aria-label="${eyeLabel(hidden)}">${icon(hidden ? 'eyeOff' : 'eye')}</button>
+          <span class="dir-name-hint"${hint ? '' : ' hidden'}>${esc(hint)}</span>
+        </div>`;
+    }).join('');
+  }
+  // Knöpfe und Hinweis einer Zeile an den gespeicherten Zustand anpassen (ohne Neuaufbau)
+  function syncDirRow(row, s) {
+    const stop = row.dataset.stop;
+    const own = Boolean(s.dirNames[stop]);
+    const hidden = s.hiddenDirs.includes(stop);
+    row.classList.toggle('is-hidden', hidden);
+    row.querySelector('[data-act="dirname-reset"]').disabled = !own;
+    const eye = row.querySelector('[data-act="dir-hide"]');
+    eye.innerHTML = icon(hidden ? 'eyeOff' : 'eye');
+    eye.title = eyeLabel(hidden);
+    eye.setAttribute('aria-label', eyeLabel(hidden));
+    const hint = row.querySelector('.dir-name-hint');
+    hint.textContent = dirHint(own, hidden, row.dataset.std);
+    hint.hidden = !hint.textContent;
+  }
+
+  function editHtml(s) {
+    const rowChoices = [...new Set([...ROW_CHOICES, s.rows])].sort((a, b) => a - b);
+    const choices = lineChoices(s);
+    const dirs = dirChoices(s);
+    const modeBtn = (mode, label) =>
+      `<button type="button" data-act="linemode" data-mode="${mode}" aria-pressed="${s.lineMode === mode}">${label}</button>`;
+    return `
+      <div class="card edit">
+        <label class="field name"><span class="field-label">Name</span>
+          <input class="input" type="text" data-act="name" value="${esc(s.name)}" maxlength="80" autocomplete="off"></label>
+        <div class="field"><span class="field-label" title="Zeigt oben, wann du losgehen musst">Fußweg</span>
+          <div class="stepper">
+            <button type="button" class="step" data-act="walk-step" data-step="-1" aria-label="Fußweg eine Minute kürzer">−</button>
+            <input class="input" type="number" data-act="walk" min="0" max="${MAX_WALK}" step="1" inputmode="numeric"
+              value="${s.walk || ''}" placeholder="–" aria-label="Fußweg zur Haltestelle in Minuten">
+            <button type="button" class="step" data-act="walk-step" data-step="1" aria-label="Fußweg eine Minute länger">+</button>
+            <span class="unit-label">min</span>
+          </div></div>
+        <label class="field"><span class="field-label">Zeilen</span>
+          <select class="input" data-act="rows">${rowChoices.map((r) => `<option${r === s.rows ? ' selected' : ''}>${r}</option>`).join('')}</select></label>
+        <div class="field wide"><span class="field-label">Verkehrsmittel</span>
+          <div class="chips">${TYPES.map(([c, , label]) =>
+            `<button type="button" class="chip" data-act="type" data-type="${c}" aria-pressed="${!s.types || s.types.includes(c)}">${label}</button>`).join('')}
+          </div></div>
+        <div class="field wide"><span class="field-label">Linien</span>
+          <div class="seg" role="group" aria-label="Linienfilter">${modeBtn('all', 'Alle')}${modeBtn('only', 'Nur …')}${modeBtn('except', 'Alle außer …')}</div>
+          ${s.lineMode === 'all' ? '' : `
+            <div class="chips">
+              <div class="chips line-chips" data-sig="${esc(choices.join(','))}">${lineChipsHtml(s, choices)}</div>
+              <input class="line-add" type="text" data-act="line-add" placeholder="+ Linie" maxlength="12" autocomplete="off" aria-label="Weitere Linie hinzufügen">
+            </div>`}
+          <span class="help">${s.lineMode !== 'all' && !s.lines.length ? 'Noch keine Linie markiert, deshalb werden alle angezeigt.' : LINE_HELP[s.lineMode]}</span>
+        </div>
+        <div class="field wide"><span class="field-label">Richtungen</span>
+          <div class="dir-names" data-sig="${esc(dirSig(dirs))}">${dirNamesHtml(s, dirs)}</div>
+          <span class="help">Text einfach überschreiben, z. B. mit „In die Stadt“. Der Pfeil stellt die automatische Beschriftung wieder her, das Auge blendet eine Richtung aus.</span>
+        </div>
+      </div>`;
+  }
+
+  function boardHtml(s, i, n) {
+    const summary = filterSummary(s);
+    const star = n > 1 ? `
+      <button class="icon-btn star-btn" type="button" data-act="fav" aria-pressed="${s.fav}"
+        title="${s.fav ? 'Favorit – wird beim Öffnen angezeigt' : 'Als Favorit festlegen'}"
+        aria-label="${s.fav ? 'Favorit' : 'Als Favorit festlegen'}">${icon('star', s.fav ? 'fill' : '')}</button>` : '';
+    const controls = state.editing ? `
+      <button class="icon-btn" type="button" data-act="left" aria-label="Tab nach links" title="Tab nach links" ${i === 0 ? 'disabled' : ''}>${icon('left')}</button>
+      <button class="icon-btn" type="button" data-act="right" aria-label="Tab nach rechts" title="Tab nach rechts" ${i === n - 1 ? 'disabled' : ''}>${icon('right')}</button>
+      <button class="icon-btn danger" type="button" data-act="remove" aria-label="${esc(s.name)} entfernen" title="Haltestelle entfernen">${icon('trash')}</button>
+      <button class="btn on done-btn" type="button" data-act="done">${icon('check')}<span>Fertig</span></button>` : '';
+    return `
+      <section class="board${state.editing ? ' editing' : ''}" data-i="${i}" id="board" ${n > 1 ? 'role="tabpanel"' : ''}>
+        <header class="board-head">
+          <div class="title-line"><h2>${esc(s.name)}</h2><span class="walk-slot"></span></div>
+          <div class="head-actions">${star}${controls}</div>
+          ${summary ? `<div class="meta-line"><span class="sub">${esc(summary)}</span></div>` : ''}
+        </header>
+        ${state.editing ? editHtml(s) : ''}
+        <div class="list"><div class="rows">${SKELETON}</div></div>
+      </section>`;
+  }
+
+  const EMPTY_HTML = `
+    <section class="card empty-state">
+      <svg class="empty-art" viewBox="0 0 220 120" aria-hidden="true">
+        <rect class="ea-card" x="10" y="4" width="200" height="112" rx="18"/>
+        <rect x="26" y="20" width="34" height="20" rx="6" fill="#e5484d"/>
+        <rect class="ea-bar" x="72" y="23" width="78" height="7" rx="3.5"/><rect class="ea-bar" x="72" y="34" width="44" height="5" rx="2.5"/>
+        <rect class="ea-num" x="172" y="22" width="20" height="14" rx="4"/>
+        <rect x="26" y="50" width="34" height="20" rx="10" fill="#6c5ef7"/>
+        <rect class="ea-bar" x="72" y="53" width="64" height="7" rx="3.5"/><rect class="ea-bar" x="72" y="64" width="36" height="5" rx="2.5"/>
+        <rect class="ea-num" x="172" y="52" width="20" height="14" rx="4"/>
+        <rect x="26" y="80" width="34" height="20" rx="6" fill="#12a594"/>
+        <rect class="ea-bar" x="72" y="83" width="86" height="7" rx="3.5"/><rect class="ea-bar" x="72" y="94" width="50" height="5" rx="2.5"/>
+        <rect class="ea-num" x="172" y="82" width="20" height="14" rx="4"/>
+      </svg>
+      <h2>Deine Abfahrten, live</h2>
+      <p>Füge Haltestellen hinzu und sieh auf einen Blick, wann Tram, Bus und S-Bahn fahren, mit Verspätungen in Echtzeit.</p>
+      <button class="btn primary" type="button" data-act="add">${icon('plus')}Haltestelle hinzufügen</button>    </section>`;
+
+  function renderTabs() {
+    const tabs = $('tabs');
+    const n = state.stations.length;
+    tabs.hidden = n < 2;
+    if (n < 2) { tabs.innerHTML = ''; return; }
+    const act = current();
+    tabs.innerHTML = state.stations.map((s, i) => `
+      <button class="tab" type="button" role="tab" data-tab="${i}" aria-selected="${s === act}" aria-controls="board" tabindex="${s === act ? 0 : -1}"
+        title="${esc(s.name)}${s.fav ? ' (Favorit)' : ''}">${s.fav ? icon('star', 'fill star') : ''}<span class="label">${esc(s.name)}</span></button>`).join('');
+  }
+
+  // Kopfzeile, Tabs, Banner, Titel
+  function renderChrome() {
+    const n = state.stations.length;
+    const edit = $('edit');
+    $('share').hidden = edit.hidden = n === 0;
+    // "Bearbeiten" ist ein Schalter; beendet wird über "Fertig" in der Bearbeiten-Ansicht
+    edit.classList.toggle('on', state.editing);
+    edit.setAttribute('aria-pressed', state.editing);
+    if (!edit.innerHTML) edit.innerHTML = `${icon('sliders')}<span class="btn-label">Bearbeiten</span>`;
+    $('banner').hidden = !state.shared;
+    document.title = n ? `${state.stations.map((s) => s.name).join(', ')} – LVB Abfahrten` : 'LVB Abfahrten';
+    renderTabs();
+  }
+
+  // Ansicht neu aufbauen (bei Änderungen am Setup, Tabwechsel, Bearbeiten-Modus)
+  function renderLayout() {
+    renderChrome();
+    const s = current();
+    $('boards').innerHTML = s ? boardHtml(s, state.stations.indexOf(s), state.stations.length) : EMPTY_HTML;
+    renderBoards();
+  }
+
+  function ago(ms) {
+    const s = Math.round(ms / 1000);
+    if (s < 10) return 'gerade eben';
+    if (s < 60) return `vor ${s} s`;
+    return `vor ${Math.round(s / 60)} min`;
+  }
+
+  // Nur neu schreiben, wenn sich etwas geändert hat (Fokus und Aufklappzustand bleiben sonst erhalten)
+  function setHtml(el, html) {
+    if (el._html === html) return;
+    el.innerHTML = html;
+    el._html = html;
+  }
+
+  // Live-Status in der Kopfzeile: Live / Stand / Fehler
+  function renderLive(f, now) {
+    const live = $('live');
+    const [st, label, time] = !f?.lastOk
+      ? (f?.error ? ['error', 'Keine Daten', ''] : ['loading', 'Lädt …', ''])
+      : f.error || now - f.lastOk > STALE_MS
+        ? ['stale', `Stand ${fmtTime(f.lastOk)}`, f.error ? 'keine Verbindung' : '']
+        : ['live', 'Live', ago(now - f.lastOk)];
+    live.dataset.state = st;
+    live.querySelector('.live-label').textContent = label;
+    live.querySelector('.live-time').textContent = time;
+    live.title = f?.lastOk ? `Aktualisiert ${new Date(f.lastOk).toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}` : '';
+  }
+
+  // Abfahrten in die bestehende Ansicht schreiben (alle 5 s und nach jedem Laden)
+  function renderBoards() {
+    const now = Date.now();
+    $('clock').textContent = fmtTime(now);
+    const board = $('boards').querySelector('.board');
+    const s = current();
+    const f = s && state.feeds.get(feedKey(s));
+    $('live').hidden = !s;
+    if (!board || !s) return;
+    renderLive(f, now);
+    // Fußweg neben dem Status; Klick öffnet die Einstellung
+    setHtml(board.querySelector('.walk-slot'), s.walk
+      ? `<button class="walk-chip" type="button" data-act="walk-edit" title="Fußweg ändern">${icon('walk')}${s.walk} min Fußweg</button>` : '');
+    if (!f) return;
+
+    // Linienauswahl nachziehen, wenn neue Linien geladen wurden
+    const chips = board.querySelector('.line-chips');
+    if (chips) {
+      const choices = lineChoices(s);
+      if (chips.dataset.sig !== choices.join(',')) {
+        chips.dataset.sig = choices.join(',');
+        chips.innerHTML = lineChipsHtml(s, choices);
+      }
+    }
+
+    const rows = board.querySelector('.rows');
+    if (!f.data) {
+      if (f.error) setHtml(rows, `<div class="empty card"><strong>Abfahrten konnten nicht geladen werden</strong>${esc(f.error)}</div>`);
+    } else {
+      const filter = lineFilter(s);
+      const upcoming = f.data.departures
+        .filter((d) => (d.cancelled ? d.planned : d.when) >= now - 30_000)
+        .filter((d) => !filter || filter(d));
+      const groups = groupByStop(upcoming);
+      for (const g of groups) if (DIR_ID_RE.test(g.stop)) f.dirs.set(g.stop, { label: g.label, platform: g.platform });
+      // Ausgeblendete Richtungen fehlen; ein Hinweis unten führt zur Einstellung
+      const visible = groups.filter((g) => !s.hiddenDirs.includes(g.stop));
+      const off = groups.length - visible.length;
+      const note = off ? `<button class="dir-hidden-note" type="button" data-act="dirs-edit">${icon('eyeOff')}${off} ${off === 1 ? 'Richtung' : 'Richtungen'} ausgeblendet</button>` : '';
+      setHtml(rows, !groups.length
+        ? `<div class="empty card"><strong>${filter ? 'Keine passenden Abfahrten' : 'Derzeit keine Abfahrten'}</strong>in der nächsten Stunde</div>`
+        : (visible.length ? groupedRowsHtml(s, visible, now) : '<div class="empty card"><strong>Alle Richtungen ausgeblendet</strong>Über den Hinweis unten lassen sie sich wieder einblenden.</div>') + note);
+    }
+
+    // Namensfelder nachziehen, wenn neue Richtungen auftauchen (nicht während man tippt)
+    const names = board.querySelector('.dir-names');
+    if (names && !names.contains(document.activeElement)) {
+      const dirs = dirChoices(s);
+      if (names.dataset.sig !== dirSig(dirs)) {
+        names.dataset.sig = dirSig(dirs);
+        names.innerHTML = dirNamesHtml(s, dirs);
+      }
+    }
+
+    // Veraltete Daten (Verbindung weg): Liste abblassen
+    board.classList.toggle('stale', f.lastOk > 0 && now - f.lastOk > STALE_MS);
+  }
+
+  // -------------------------------------------------------------------------
+  // Bedienung
+
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => { t.hidden = true; }, 2200);
+  }
+
+  const boards = $('boards');
+  const tabs = $('tabs');
+  const refocus = (selector) => boards.querySelector(selector)?.focus();
+  const showActiveTab = (focus) => {
+    const tab = tabs.querySelector('[aria-selected="true"]');
+    tab?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (focus) tab?.focus();
+  };
+
+  function switchTo(i, focus = false) {
+    const s = state.stations[i];
+    if (!s) return;
+    if (s !== current()) {
+      state.active = s;
+      state.openAlerts.clear();
+      renderLayout();
+      boards.querySelector('.board')?.classList.add('enter');
+      load();
+    }
+    showActiveTab(focus);
+  }
+
+  tabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-tab]');
+    if (tab) switchTo(Number(tab.dataset.tab), true); // Fokus behalten, damit Pfeiltasten weiter gehen
+  });
+  // Tastatur wie bei Tabs üblich: Pfeile, Pos1, Ende
+  tabs.addEventListener('keydown', (e) => {
+    const n = state.stations.length;
+    const i = state.stations.indexOf(current());
+    const next = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    switchTo(next, true);
+  });
+  // Mausrad scrollt die Tab-Leiste seitwärts, wenn sie überläuft
+  tabs.addEventListener('wheel', (e) => {
+    if (tabs.scrollWidth <= tabs.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    tabs.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
+
+  boards.addEventListener('click', (e) => {
+    const alertBtn = e.target.closest('[data-alert]');
+    if (alertBtn) {
+      const k = alertBtn.dataset.alert;
+      state.openAlerts.has(k) ? state.openAlerts.delete(k) : state.openAlerts.add(k);
+      renderBoards();
+      return;
+    }
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    if (btn.dataset.act === 'add') return openSearch(true);
+    const s = current();
+    if (!s) return;
+    const i = state.stations.indexOf(s);
+    switch (btn.dataset.act) {
+      case 'fav':
+        if (s.fav) return;
+        setFavorite(s);
+        commit();
+        refocus('[data-act="fav"]');
+        toast(`${s.name} wird jetzt beim Öffnen angezeigt`);
+        break;
+      case 'left':
+      case 'right': {
+        const j = btn.dataset.act === 'left' ? i - 1 : i + 1;
+        if (j < 0 || j >= state.stations.length) return;
+        [state.stations[i], state.stations[j]] = [state.stations[j], state.stations[i]];
+        commit();
+        // Am Rand ist der Pfeil deaktiviert – dann auf den anderen Pfeil
+        (boards.querySelector(`[data-act="${btn.dataset.act}"]:not(:disabled)`)
+          ?? boards.querySelector('[data-act="left"]:not(:disabled), [data-act="right"]:not(:disabled)'))?.focus();
+        showActiveTab(false);
+        break;
+      }
+      case 'remove':
+        state.stations.splice(i, 1);
+        state.active = state.stations[Math.min(i, state.stations.length - 1)] ?? null;
+        state.openAlerts.clear();
+        commit();
+        break;
+      case 'type': {
+        const all = s.types || ALL_TYPES;
+        const c = btn.dataset.type;
+        s.types = canonTypes(all.includes(c) ? all.replace(c, '') : all + c);
+        commit();
+        refocus(`[data-type="${c}"]`);
+        break;
+      }
+      case 'linemode':
+        s.lineMode = btn.dataset.mode;
+        commit();
+        refocus(`[data-mode="${s.lineMode}"]`);
+        break;
+      case 'line': {
+        const l = btn.dataset.line;
+        s.lines = s.lines.includes(l) ? s.lines.filter((x) => x !== l) : canonLines([...s.lines, l]);
+        commit();
+        refocus(`[data-act="line"][data-line="${CSS.escape(l)}"]`);
+        break;
+      }
+      case 'walk-step': {
+        // Ohne Neuaufbau, damit man mehrmals hintereinander tippen kann
+        s.walk = clampWalk(s.walk + Number(btn.dataset.step));
+        const field = boards.querySelector('[data-act="walk"]');
+        if (field) field.value = s.walk || '';
+        persist();
+        renderBoards();
+        break;
+      }
+      case 'done':
+        state.editing = false;
+        renderLayout();
+        break;
+      case 'dir-hide': {
+        const stop = btn.dataset.stop;
+        s.hiddenDirs = s.hiddenDirs.includes(stop) ? s.hiddenDirs.filter((x) => x !== stop) : canonHidden([...s.hiddenDirs, stop]);
+        syncDirRow(btn.closest('.dir-name-row'), s);
+        persist();
+        renderBoards();
+        break;
+      }
+      case 'dirs-edit': {
+        // Hinweis "… ausgeblendet": Einstellungen öffnen, erste ausgeblendete Richtung anspringen
+        state.editing = true;
+        renderLayout();
+        const eye = boards.querySelector('.dir-name-row.is-hidden [data-act="dir-hide"]');
+        eye?.scrollIntoView({ block: 'center' });
+        eye?.focus();
+        break;
+      }
+      case 'dirname-reset': {
+        const row = btn.closest('.dir-name-row');
+        const field = row.querySelector('input');
+        delete s.dirNames[btn.dataset.stop];
+        field.value = field.dataset.auto;
+        syncDirRow(row, s);
+        persist();
+        renderBoards();
+        field.focus(); // der Knopf ist jetzt deaktiviert, Fokus ins Feld
+        break;
+      }
+      case 'walk-edit':
+        state.editing = true;
+        renderLayout();
+        refocus('[data-act="walk"]');
+        break;
+    }
+  });
+
+  boards.addEventListener('change', (e) => {
+    const s = current();
+    if (!s) return;
+    const act = e.target.dataset.act;
+    if (act === 'rows') {
+      s.rows = clampRows(e.target.value);
+      persist();
+      renderBoards();
+    } else if (act === 'walk') {
+      e.target.value = s.walk || ''; // Eingabe wie 75 oder -3 sichtbar auf den gültigen Wert setzen
+    } else if (act === 'dirname') {
+      if (!e.target.value.trim()) e.target.value = e.target.dataset.auto; // geleert: wieder Standard zeigen
+    } else if (act === 'line-add') {
+      const l = normLine(e.target.value);
+      e.target.value = '';
+      if (!l || !/^[\p{L}\p{N} .\-]+$/u.test(l)) return;
+      s.lines = canonLines([...s.lines, l]);
+      commit();
+      refocus('.line-add');
+    }
+  });
+  // Enter in Linien-, Fußweg- oder Richtungsfeld schließt die Eingabe ab
+  boards.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && ['line-add', 'walk', 'dirname'].includes(e.target.dataset.act)) e.target.blur();
+  });
+
+  // Name, Fußweg und Richtungsnamen wirken beim Tippen, ohne Neuaufbau der Ansicht (Cursor bleibt im Feld)
+  boards.addEventListener('input', (e) => {
+    const s = current();
+    if (!s) return;
+    if (e.target.dataset.act === 'name') {
+      s.name = e.target.value.trim().slice(0, 80) || fallbackName(s.id);
+      boards.querySelector('h2').textContent = s.name;
+      persist(); // aktualisiert auch die Tabs
+    } else if (e.target.dataset.act === 'walk') {
+      s.walk = clampWalk(e.target.value);
+      persist();
+      renderBoards();
+    } else if (e.target.dataset.act === 'dirname') {
+      // Leer oder genau der Standard = nicht umbenannt
+      const stop = e.target.dataset.stop;
+      const label = e.target.value.trim();
+      if (label && label !== e.target.dataset.auto) s.dirNames[stop] = label.slice(0, MAX_DIR_NAME);
+      else delete s.dirNames[stop];
+      syncDirRow(e.target.closest('.dir-name-row'), s);
+      persist();
+      renderBoards();
+    }
+  });
+
+  $('edit').addEventListener('click', () => {
+    state.editing = !state.editing;
+    renderLayout();
+  });
+
+  // Alles Gespeicherte auf diesem Gerät löschen (nach Rückfrage). Geteilte Links enthalten
+  // ihr Setup selbst und funktionieren danach weiter.
+  const wipeDialog = $('wipe-dialog');
+  $('wipe').addEventListener('click', () => {
+    wipeDialog.showModal();
+    $('wipe-cancel').focus(); // sichere Voreinstellung
+  });
+  $('wipe-cancel').addEventListener('click', () => wipeDialog.close());
+  wipeDialog.addEventListener('click', (e) => { if (e.target === wipeDialog) wipeDialog.close(); }); // Klick daneben
+  $('wipe-ok').addEventListener('click', () => {
+    try {
+      for (const k of Object.keys(localStorage)) if (k.startsWith('lvb-monitor.')) localStorage.removeItem(k); // auch ältere Versionen
+    } catch { /* kein Speicher verfügbar: nichts zu löschen */ }
+    Object.assign(state, { stations: [], active: null, shared: false, editing: false });
+    state.feeds.clear();
+    state.openAlerts.clear();
+    history.replaceState(null, '', location.pathname + location.search);
+    wipeDialog.close();
+    renderLayout();
+    toast('Lokale Daten gelöscht');
+  });
+
+  // Aktualisieren: lädt sofort neu (der Server liefert höchstens 20 s alte Daten).
+  // Das Symbol dreht sich mindestens kurz, damit man die Rückmeldung sieht.
+  $('refresh').addEventListener('click', async () => {
+    const btn = $('refresh');
+    const started = Date.now();
+    btn.classList.add('spinning');
+    await load(true);
+    setTimeout(() => btn.classList.remove('spinning'), Math.max(0, 700 - (Date.now() - started)));
+  });
+
+  // Menü (nur auf kleinen Bildschirmen): Burger öffnet die Kopfzeilen-Knöpfe
+  const menu = $('menu');
+  const menuBtn = $('menu-btn');
+  function setMenu(open) {
+    menu.classList.toggle('open', open);
+    menuBtn.setAttribute('aria-expanded', open);
+    menuBtn.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü');
+    menuBtn.innerHTML = icon(open ? 'x' : 'menu');
+  }
+  menuBtn.addEventListener('click', () => {
+    const open = !menu.classList.contains('open');
+    setMenu(open);
+    if (open) menu.querySelector('button:not([hidden])')?.focus();
+  });
+  // Nach der Aktion schließen. Nicht über e.target prüfen: "Bearbeiten" tauscht beim Klick seinen Inhalt.
+  menu.addEventListener('click', () => setMenu(false));
+  document.addEventListener('click', (e) => {
+    // composedPath statt contains: das Burger-Symbol wird beim Klick ausgetauscht
+    const path = e.composedPath();
+    if (menu.classList.contains('open') && !path.includes(menu) && !path.includes(menuBtn)) setMenu(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu.classList.contains('open')) { setMenu(false); menuBtn.focus(); }
+  });
+
+  $('share').addEventListener('click', async () => {
+    const url = location.href;
+    try {
+      if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+        await navigator.share({ title: document.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast('Link kopiert');
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') window.prompt('Link zum Kopieren:', url);
+    }
+  });
+
+  $('adopt').addEventListener('click', () => {
+    persist();
+    toast('Als deine Haltestellen gespeichert');
+  });
+  $('mine').addEventListener('click', () => {
+    // Echte Navigation, damit "Zurück" wieder zur geteilten Ansicht führt
+    location.hash = encodeSetup(store.load());
+  });
+
+  window.addEventListener('hashchange', () => {
+    applyLocation();
+    renderLayout();
+    load();
+  });
+
+  // Haltestellensuche (Dialog)
+  const search = $('search'), input = $('search-input'), results = $('search-results'), hint = $('search-hint');
+  let searchTimer, searchSeq = 0;
+  function openSearch(open) {
+    if (open && !search.open) {
+      hint.textContent = SEARCH_HINT;
+      search.showModal();
+      $('add').setAttribute('aria-expanded', 'true');
+      input.focus();
+    } else if (!open && search.open) {
+      search.close();
+    }
+  }
+  search.addEventListener('close', () => {
+    $('add').setAttribute('aria-expanded', 'false');
+    clearTimeout(searchTimer);
+    searchSeq++;
+    input.value = '';
+    results.innerHTML = '';
+  });
+  search.addEventListener('click', (e) => { if (e.target === search) search.close(); }); // Klick neben das Fenster
+  $('search-close').addEventListener('click', () => search.close());
+  $('add').addEventListener('click', () => openSearch(true));
+
+  const resultButtons = () => [...results.querySelectorAll('button')];
+  input.addEventListener('keydown', (e) => {
+    // Suchfelder leeren bei Escape erst ihren Text – hier soll Escape sofort schließen
+    if (e.key === 'Escape') { e.preventDefault(); search.close(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); resultButtons()[0]?.focus(); }
+    if (e.key === 'Enter') { e.preventDefault(); resultButtons()[0]?.click(); }
+  });
+  results.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const list = resultButtons();
+    const i = list.indexOf(document.activeElement) + (e.key === 'ArrowDown' ? 1 : -1);
+    (i < 0 ? input : list[Math.min(i, list.length - 1)]).focus();
+  });
+
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const q = input.value.trim();
+    if (q.length < 2) { searchSeq++; results.innerHTML = ''; hint.textContent = SEARCH_HINT; return; }
+    searchTimer = setTimeout(async () => {
+      const seq = ++searchSeq;
+      hint.textContent = 'Suche …';
+      try {
+        const r = await fetch(`/api/stops?q=${encodeURIComponent(q)}`);
+        const list = await r.json();
+        if (seq !== searchSeq) return;
+        if (!r.ok) throw new Error(list.error);
+        const have = new Set(state.stations.map((s) => s.id));
+        hint.textContent = list.length ? '' : 'Keine Haltestelle gefunden.';
+        results.innerHTML = list.map((s) => {
+          const [, town, stop] = /^([^,]+), (.+)$/.exec(s.name) ?? [null, null, s.name];
+          const sub = [...new Set([town, s.district].filter(Boolean))].join(' · ');
+          return `
+            <li><button type="button" data-id="${esc(s.id)}" data-name="${esc(s.name)}">
+              <span class="pin">${icon('pin')}</span>
+              <span class="res-text"><span class="res-name">${esc(stop)}</span>${sub ? `<span class="res-sub">${esc(sub)}</span>` : ''}</span>
+              ${have.has(s.id) ? `<span class="added">${icon('check')}hinzugefügt</span>` : ''}
+            </button></li>`;
+        }).join('');
+      } catch {
+        if (seq === searchSeq) hint.textContent = 'Suche gerade nicht möglich.';
+      }
+    }, 300);
+  });
+
+  // Neue Haltestelle wird als Tab angehängt und direkt angezeigt
+  results.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-id]');
+    if (!btn) return;
+    const s = newStation(btn.dataset.id, btn.dataset.name.replace(/^Leipzig, /, ''));
+    state.stations.push(s);
+    state.active = s;
+    state.openAlerts.clear();
+    openSearch(false);
+    commit();
+    boards.querySelector('.board')?.classList.add('enter');
+    showActiveTab(false);
+  });
+
+  // -------------------------------------------------------------------------
+  // Start: Favorit anzeigen; Daten alle 30 s (nur wenn sichtbar), Countdown alle 5 s
+
+  applyLocation();
+  renderLayout();
+  load();
+  setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
+  setInterval(renderBoards, RENDER_MS);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>

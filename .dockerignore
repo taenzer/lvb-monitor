@@ -1,0 +1,14 @@
+# Ins Image gehören nur package.json, server.js und public/
+.git
+.gitignore
+.dockerignore
+Dockerfile*
+docker-compose*
+.drone.yml
+.github
+.claude
+test
+node_modules
+*.md
+*.log
+.env*

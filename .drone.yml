@@ -1,0 +1,54 @@
+---
+kind: pipeline
+type: docker
+name: release
+
+# Ausgelöst durch ein GitHub-Release: Beim Veröffentlichen legt GitHub den Tag an,
+# Drone baut dann mit dem Ereignis "tag". Der Tag-Name (DRONE_TAG) ist die Version
+# und der Tag des Images.
+trigger:
+  event:
+    - tag
+
+steps:
+  - name: Smoke-Test
+    image: node:24-alpine
+    environment:
+      APP_VERSION: ${DRONE_TAG}
+    commands:
+      - sh test/smoke.sh
+
+  - name: Create and upload Docker Image
+    image: plugins/docker
+    environment:
+      DOCKER_BUILDKIT: 1
+    settings:
+      registry: registry.der-taenzer.net
+      username:
+        from_secret: REGISTRY_USER
+      password:
+        from_secret: REGISTRY_PASS
+      repo: registry.der-taenzer.net/tnz/lvb-monitor
+      tags:
+        - ${DRONE_TAG}
+        - latest
+      dockerfile: ./Dockerfile
+      context: .
+      build_args:
+        - BUILDKIT_INLINE_CACHE=1
+        - APP_VERSION=${DRONE_TAG}
+        - BUILD_NR=${DRONE_BUILD_NUMBER}
+        - BUILD_DATE=${DRONE_BUILD_CREATED}
+      # Cache für schnellere Builds
+      cache_from:
+        - registry.der-taenzer.net/tnz/lvb-monitor:latest
+
+  - name: Refresh Docker Stack
+    image: curlimages/curl
+    environment:
+      # Webhook-URL des Portainer-Stacks als Secret: Wer sie kennt, kann neu ausrollen lassen
+      WEBHOOK_URL:
+        from_secret: PORTAINER_WEBHOOK
+    commands:
+      # $$ = erst die Shell setzt die Werte ein (nicht schon Drone, Secrets kennt Drone hier nicht)
+      - curl -fsS -X POST "$${WEBHOOK_URL}?APP_VERSION=$${DRONE_TAG}&BUILD_NR=$${DRONE_BUILD_NUMBER}&BUILD_DATE=$${DRONE_BUILD_CREATED}"

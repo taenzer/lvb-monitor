@@ -42,13 +42,7 @@ steps:
       # Cache für schnellere Builds
       cache_from:
         - registry.der-taenzer.net/tnz/lvb-monitor:latest
-
-  # - name: Refresh Docker Stack
-  #   image: curlimages/curl
-  #   environment:
-  #     # Webhook-URL des Portainer-Stacks als Secret: Wer sie kennt, kann neu ausrollen lassen
-  #     WEBHOOK_URL:
-  #       from_secret: PORTAINER_WEBHOOK
-  #   commands:
-  #     # $$ = erst die Shell setzt die Werte ein (nicht schon Drone, Secrets kennt Drone hier nicht)
-  #     - curl -fsS -X POST "$${WEBHOOK_URL}?APP_VERSION=$${DRONE_TAG}&BUILD_NR=$${DRONE_BUILD_NUMBER}&BUILD_DATE=$${DRONE_BUILD_CREATED}"
+  - name: Refresh Docker Stack
+    image: plugins/webhook
+    settings:
+      urls: https://docker.der-taenzer.net/api/stacks/webhooks/3a07726b-33ee-46fb-bb29-9f4a85ebf337?BUILD_NR=${DRONE_BUILD_NUMBER}&BUILD_DATE=${DRONE_BUILD_CREATED}

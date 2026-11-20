@@ -31,7 +31,12 @@ Schneller Test ohne Anfragen an die LVB: `sh test/smoke.sh` (oder `APP_VERSION=1
 
 - **+ Haltestelle**: Haltestelle suchen und hinzufügen. Die Anzahl ist nicht begrenzt.
   Jede Haltestelle bekommt einen Tab, angezeigt wird immer nur eine. Die Tabs lassen sich
-  auch mit Pfeiltasten, Pos1 und Ende wechseln.
+  auch mit Pfeiltasten, Pos1 und Ende wechseln. Auf Touch-Geräten wechselt Wischen nach links
+  zur nächsten und nach rechts zur vorigen Haltestelle: Die Nachbarseite fährt wie bei einem
+  Karussell mit dem Finger herein, mit ihren Abfahrten, sobald sie bekannt sind (sie werden
+  dabei schon geladen), sonst mit Platzhaltern. Beim Loslassen bleibt genau das stehen;
+  kommen die Abfahrten erst danach, blenden sie sanft ein. Nicht im Bearbeiten-Modus; am
+  ersten und letzten Tab federt die Karte nur zurück.
 - **Favorit (Stern neben dem Namen)**: Der Favorit wird beim Öffnen der Seite oder eines Links
   immer zuerst angezeigt, unabhängig davon, welcher Tab zuletzt offen war. Zu Beginn ist die
   erste Haltestelle der Favorit; wird er entfernt, rückt die erste Haltestelle nach.
@@ -111,8 +116,9 @@ darauf öffnet die Einstellung.
   | darunter | grau „nicht zu schaffen“, Zeile ausgegraut |
 
 - **Was angezeigt wird:** Je Richtung steht vor der ersten erreichbaren Abfahrt nur die
-  zuletzt verpasste (zur Orientierung), ältere fallen weg. Ist in einer Richtung nichts
-  mehr zu schaffen, steht das unter der Gruppe.
+  zuletzt verpasste (zur Orientierung), ältere fallen weg. Fährt in einer Richtung in der
+  nächsten Stunde nichts mehr, das man zu Fuß erreicht, steht unter der Gruppe „Keine
+  Verbindung in der nächsten Stunde“.
 - Ausgefallene Fahrten bekommen keinen Hinweis. Ohne Echtzeitdaten steht „laut Fahrplan“ im
   Tooltip des Hinweises. Linien- und Verkehrsmittelfilter gelten auch hier.
 - Ohne Fußweg (leer oder 0) bleibt die Liste nach Richtung gruppiert, nur ohne Hinweise.
@@ -199,6 +205,7 @@ Der Server bietet zwei Endpunkte an:
 - `/api/stops?q=…`: die Haltestellensuche.
 
 Die Seite lädt nur die Haltestelle im offenen Tab, alle 30 s und nur solange sie sichtbar ist.
+Ausnahme: Beim Wischen wird die hereinfahrende Nachbarseite einmal vorgeladen.
 Beim Tabwechsel erscheinen sofort die zuletzt bekannten Abfahrten, dann wird aktualisiert.
 
 ## Schutz der LVB-Schnittstelle

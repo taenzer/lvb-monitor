@@ -82,7 +82,9 @@
   }
   .ic.fill { fill: currentColor; }
 
-  .app { margin: 0 auto; padding: 0 16px; max-width: 760px; }
+  /* overflow-x: clip: beim Wischen hinausgleitende Karten erzeugen kein seitliches Scrollen
+     (anders als hidden bleibt die Tab-Leiste dabei sticky) */
+  .app { margin: 0 auto; padding: 0 16px; max-width: 760px; overflow-x: clip; }
 
   /* Kopfzeile */
   .topbar { display: flex; align-items: center; gap: 12px; padding: 18px 0 22px; }
@@ -168,6 +170,13 @@
   /* Haltestelle */
   .board.enter { animation: rise .22s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  /* Wischen: senkrechtes Scrollen und Zoomen bleiben beim Browser, waagerecht übernimmt die App */
+  #boards { position: relative; touch-action: pan-y pinch-zoom; }
+  /* beim Wischen: die nächste Seite liegt daneben und fährt mit herein */
+  /* Hintergrund in Seitenfarbe: Ist die Nachbarseite länger als die aktuelle, deckt sie den
+     Footer ab; nach dem Wechsel steht er schon unter der neuen Seite. (Der Farbverlauf oben
+     auf der Seite endet weit über den Karten, die Fläche fällt daher nicht auf.) */
+  .swipe-peek { position: absolute; top: 0; left: 0; right: 0; pointer-events: none; background: var(--bg); }
   .board-head {
     display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
     column-gap: 8px; margin: 0 2px 16px;
@@ -389,10 +398,18 @@
   .sk-l1 { width: 55%; height: 12px; }
   .sk-l2 { width: 30%; height: 9px; }
   .sk-when { width: 2.2rem; height: 22px; }
+  .loading.card { overflow: hidden; }
+  .sk-head { width: 45%; height: 10px; background: color-mix(in srgb, var(--group-ink) 22%, transparent); }
   .sk-row:nth-child(2) .sk { animation-delay: .1s; }
   .sk-row:nth-child(3) .sk { animation-delay: .2s; }
   .sk-row:nth-child(4) .sk { animation-delay: .3s; }
   @keyframes shimmer { to { opacity: .4; } }
+  /* echte Abfahrten ersetzen die Platzhalter: Karten kurz nacheinander einblenden */
+  .rows.reveal > * { animation: reveal .28s ease-out both; }
+  .rows.reveal > :nth-child(2) { animation-delay: .05s; }
+  .rows.reveal > :nth-child(3) { animation-delay: .1s; }
+  .rows.reveal > :nth-child(n+4) { animation-delay: .15s; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(6px); } }
 
   /* Leerer Start */
   .empty-state { padding: 40px 28px 32px; text-align: center; }
@@ -929,10 +946,10 @@
 
   // force: auch laden, wenn die letzten Daten noch frisch sind (Aktualisieren-Knopf).
   // Gibt das laufende Laden als Promise zurück.
-  function load(force = false) {
+  // s: welche Haltestelle (sonst die angezeigte); beim Wischen wird die nächste vorgeladen.
+  function load(force = false, s = current()) {
     const keys = new Set(state.stations.map(feedKey));
     for (const k of state.feeds.keys()) if (!keys.has(k)) state.feeds.delete(k);
-    const s = current();
     if (!s) return Promise.resolve();
     const key = feedKey(s);
     let f = state.feeds.get(key);
@@ -1100,12 +1117,12 @@
         <div class="dir-group">
           <div class="dir-head"><span class="dir-name"${own ? ` title="${esc(autoDirName(g))}"` : ''}>${esc(own || autoDirName(g))}</span>${g.platform ? `<span class="dir-steig">Steig ${esc(g.platform)}</span>` : ''}</div>
           ${shown.map((d) => rowHtml(d, now, s.walk)).join('')}
-          ${none ? '<div class="dir-empty">In der nächsten Stunde nicht mehr zu schaffen</div>' : ''}
+          ${none ? '<div class="dir-empty">Keine Verbindung in der nächsten Stunde</div>' : ''}
         </div>`;
     }).join('');
   }
 
-  const SKELETON = `<div class="loading card" role="status" aria-label="Lade Abfahrten">${
+  const SKELETON = `<div class="loading card" role="status" aria-label="Lade Abfahrten"><div class="dir-head"><span class="sk sk-head"></span></div>${
     '<div class="row sk-row"><span class="sk sk-badge"></span><span class="sk-lines"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span><span class="sk sk-when"></span></div>'.repeat(4)}</div>`;
 
   // Kurzinfo neben dem Namen: aktive Filter
@@ -1296,7 +1313,7 @@
     renderChrome();
     const s = current();
     $('boards').innerHTML = s ? boardHtml(s, state.stations.indexOf(s), state.stations.length) : EMPTY_HTML;
-    renderBoards();
+    renderBoards(false);
   }
 
   function ago(ms) {
@@ -1313,6 +1330,10 @@
     el._html = html;
   }
 
+  // Fußweg hinter dem Namen; Klick öffnet die Einstellung
+  const walkChipHtml = (s) => (s.walk
+    ? `<button class="walk-chip" type="button" data-act="walk-edit" title="Fußweg ändern">${icon('walk')}${s.walk} min Fußweg</button>` : '');
+
   // Live-Status in der Kopfzeile: Live / Stand / Fehler
   function renderLive(f, now) {
     const live = $('live');
@@ -1327,19 +1348,51 @@
     live.title = f?.lastOk ? `Aktualisiert ${new Date(f.lastOk).toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin' })}` : '';
   }
 
+  // Inhalt der Abfahrtsliste einer Haltestelle; null = noch keine Daten (Platzhalter bleiben)
+  function rowsHtml(s, f, now) {
+    if (!f?.data) return f?.error ? `<div class="empty card"><strong>Abfahrten konnten nicht geladen werden</strong>${esc(f.error)}</div>` : null;
+    const filter = lineFilter(s);
+    const upcoming = f.data.departures
+      .filter((d) => (d.cancelled ? d.planned : d.when) >= now - 30_000)
+      .filter((d) => !filter || filter(d));
+    const groups = groupByStop(upcoming);
+    for (const g of groups) if (DIR_ID_RE.test(g.stop)) f.dirs.set(g.stop, { label: g.label, platform: g.platform });
+    if (!groups.length) {
+      return `<div class="empty card"><strong>${filter ? 'Keine passenden Abfahrten' : 'Derzeit keine Abfahrten'}</strong>in der nächsten Stunde</div>`;
+    }
+    // Ausgeblendete Richtungen fehlen; ein Hinweis unten führt zur Einstellung
+    const visible = groups.filter((g) => !s.hiddenDirs.includes(g.stop));
+    const off = groups.length - visible.length;
+    const note = off ? `<button class="dir-hidden-note" type="button" data-act="dirs-edit">${icon('eyeOff')}${off} ${off === 1 ? 'Richtung' : 'Richtungen'} ausgeblendet</button>` : '';
+    return (visible.length
+      ? groupedRowsHtml(s, visible, now)
+      : '<div class="empty card"><strong>Alle Richtungen ausgeblendet</strong>Über den Hinweis unten lassen sie sich wieder einblenden.</div>') + note;
+  }
+
+  // Liste füllen. Ersetzen echte Abfahrten die Platzhalter, blenden die Karten sanft ein
+  // (reveal = false, wenn der Inhalt sofort da ist, z. B. nach dem Hereinwischen).
+  function fillRows(rows, html, reveal) {
+    if (html === null) return;
+    const replacesSkeleton = Boolean(rows.querySelector('.loading'));
+    setHtml(rows, html);
+    if (reveal && replacesSkeleton) {
+      rows.classList.add('reveal');
+      clearTimeout(rows._reveal);
+      rows._reveal = setTimeout(() => rows.classList.remove('reveal'), 600);
+    }
+  }
+
   // Abfahrten in die bestehende Ansicht schreiben (alle 5 s und nach jedem Laden)
-  function renderBoards() {
+  function renderBoards(reveal = true) {
     const now = Date.now();
     $('clock').textContent = fmtTime(now);
-    const board = $('boards').querySelector('.board');
+    const board = $('boards').querySelector(':scope > .board');
     const s = current();
     const f = s && state.feeds.get(feedKey(s));
     $('live').hidden = !s;
     if (!board || !s) return;
     renderLive(f, now);
-    // Fußweg neben dem Status; Klick öffnet die Einstellung
-    setHtml(board.querySelector('.walk-slot'), s.walk
-      ? `<button class="walk-chip" type="button" data-act="walk-edit" title="Fußweg ändern">${icon('walk')}${s.walk} min Fußweg</button>` : '');
+    setHtml(board.querySelector('.walk-slot'), walkChipHtml(s));
     if (!f) return;
 
     // Linienauswahl nachziehen, wenn neue Linien geladen wurden
@@ -1352,24 +1405,7 @@
       }
     }
 
-    const rows = board.querySelector('.rows');
-    if (!f.data) {
-      if (f.error) setHtml(rows, `<div class="empty card"><strong>Abfahrten konnten nicht geladen werden</strong>${esc(f.error)}</div>`);
-    } else {
-      const filter = lineFilter(s);
-      const upcoming = f.data.departures
-        .filter((d) => (d.cancelled ? d.planned : d.when) >= now - 30_000)
-        .filter((d) => !filter || filter(d));
-      const groups = groupByStop(upcoming);
-      for (const g of groups) if (DIR_ID_RE.test(g.stop)) f.dirs.set(g.stop, { label: g.label, platform: g.platform });
-      // Ausgeblendete Richtungen fehlen; ein Hinweis unten führt zur Einstellung
-      const visible = groups.filter((g) => !s.hiddenDirs.includes(g.stop));
-      const off = groups.length - visible.length;
-      const note = off ? `<button class="dir-hidden-note" type="button" data-act="dirs-edit">${icon('eyeOff')}${off} ${off === 1 ? 'Richtung' : 'Richtungen'} ausgeblendet</button>` : '';
-      setHtml(rows, !groups.length
-        ? `<div class="empty card"><strong>${filter ? 'Keine passenden Abfahrten' : 'Derzeit keine Abfahrten'}</strong>in der nächsten Stunde</div>`
-        : (visible.length ? groupedRowsHtml(s, visible, now) : '<div class="empty card"><strong>Alle Richtungen ausgeblendet</strong>Über den Hinweis unten lassen sie sich wieder einblenden.</div>') + note);
-    }
+    fillRows(board.querySelector('.rows'), rowsHtml(s, f, now), reveal);
 
     // Namensfelder nachziehen, wenn neue Richtungen auftauchen (nicht während man tippt)
     const names = board.querySelector('.dir-names');
@@ -1405,18 +1441,126 @@
     if (focus) tab?.focus();
   };
 
-  function switchTo(i, focus = false) {
+  // animate: false, wenn die Seite schon per Wischen hereingeglitten ist
+  function switchTo(i, focus = false, animate = true) {
     const s = state.stations[i];
     if (!s) return;
     if (s !== current()) {
       state.active = s;
       state.openAlerts.clear();
       renderLayout();
-      boards.querySelector('.board')?.classList.add('enter');
+      if (animate) boards.querySelector('.board')?.classList.add('enter');
       load();
     }
     showActiveTab(focus);
   }
+
+  // Wischen zwischen den Tabs (nur Touch): nach links = nächste, nach rechts = vorige Haltestelle.
+  // Wie ein Karussell: Neben der aktuellen Karte liegt die Nachbarseite (Überschrift und
+  // Platzhalterzeilen) und fährt mit dem Finger herein; ihre Abfahrten werden schon vorgeladen.
+  // Am ersten/letzten Tab federt die Karte nur. Im Bearbeiten-Modus aus.
+  const SWIPE_MIN = 60;      // px, ab hier wird gewechselt
+  const SWIPE_FLICK = 0.45;  // px/ms, schneller Wisch reicht auch kürzer (ab 25 px)
+  const SWIPE_SLOP = 12;     // px, bis dahin ist noch nicht klar, ob Wischen oder Tippen
+  const SWIPE_GAP = 16;      // px Abstand zwischen den Seiten (= Seitenrand)
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let swipe = null;
+  let swipeBusy = false;     // während die Seite nach dem Loslassen gleitet
+  let suppressClickUntil = 0;
+
+  // Nachbarseite so, wie switchTo sie zuerst zeigt: Kopf mit Name, darunter Platzhalter
+  function makePeek(s, i) {
+    const el = document.createElement('div');
+    el.className = 'swipe-peek';
+    el.setAttribute('aria-hidden', 'true');
+    el.inert = true;
+    el.innerHTML = boardHtml(s, i, state.stations.length);
+    const board = el.querySelector('.board');
+    board.removeAttribute('id');
+    board.removeAttribute('role');
+    el.querySelector('.walk-slot').innerHTML = walkChipHtml(s);
+    fillRows(el.querySelector('.rows'), rowsHtml(s, state.feeds.get(feedKey(s)), Date.now()), false); // schon bekannt: sofort
+    return el;
+  }
+  // Nachbarseite für die Wischrichtung (1 = nächste rechts, -1 = vorige links); null am Rand
+  function peekFor(sw, dir) {
+    if (sw.dir === dir) return sw.peek;
+    sw.peek?.remove();
+    sw.dir = dir;
+    const j = state.stations.indexOf(current()) + dir;
+    const s = state.stations[j];
+    sw.peek = s ? makePeek(s, j) : null;
+    if (sw.peek) {
+      const peek = sw.peek;
+      boards.append(peek);
+      // Abfahrten schon laden; kommen sie während des Wischens an, erscheinen sie gleich hier.
+      // Beim Loslassen zeigt die echte Ansicht dann genau dasselbe.
+      load(false, s).then(() => {
+        if (peek.isConnected) fillRows(peek.querySelector('.rows'), rowsHtml(s, state.feeds.get(feedKey(s)), Date.now()), true);
+      });
+    }
+    return sw.peek;
+  }
+  function placeSwipe(sw, dx) {
+    sw.board.style.transform = dx ? `translateX(${dx}px)` : '';
+    if (sw.peek) sw.peek.style.transform = `translateX(calc(${sw.dir * 100}% + ${sw.dir * SWIPE_GAP + dx}px))`;
+  }
+
+  boards.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch' || !e.isPrimary || swipeBusy || state.editing || state.stations.length < 2) return;
+    if (e.target.closest('input, select, textarea')) return;
+    const board = boards.querySelector('.board');
+    if (board) swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, active: false, dir: 0, peek: null, board };
+  });
+  boards.addEventListener('pointermove', (e) => {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    const dx = e.clientX - swipe.x;
+    const dy = e.clientY - swipe.y;
+    if (!swipe.active) {
+      if (Math.abs(dy) > SWIPE_SLOP && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; } // senkrecht: scrollen
+      if (Math.abs(dx) < SWIPE_SLOP || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      swipe.active = true;
+      boards.setPointerCapture?.(e.pointerId);
+      swipe.board.style.transition = 'none';
+    }
+    const peek = peekFor(swipe, dx < 0 ? 1 : -1);
+    if (peek) peek.style.transition = 'none';
+    swipe.dx = peek ? dx : dx * 0.3; // am Rand nur federn
+    placeSwipe(swipe, swipe.dx);
+  });
+  function endSwipe(e, cancelled) {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    const s = swipe;
+    swipe = null;
+    if (!s.active) return;
+    suppressClickUntil = performance.now() + 400; // kein versehentlicher Klick unter dem Finger
+    const dist = Math.abs(s.dx);
+    const speed = dist / Math.max(1, e.timeStamp - s.t);
+    const go = !cancelled && s.peek && (dist > SWIPE_MIN || (dist > 25 && speed > SWIPE_FLICK));
+    const ms = reduceMotion.matches ? 0 : 180;
+    const transition = ms ? `transform ${ms}ms ease-out` : 'none';
+    s.board.style.transition = transition;
+    if (s.peek) s.peek.style.transition = transition;
+    if (!go) {
+      placeSwipe(s, 0); // zurückfedern, Nachbarseite gleitet wieder hinaus
+      const peek = s.peek;
+      setTimeout(() => peek?.remove(), ms);
+      return;
+    }
+    // Aktuelle Seite hinaus, Nachbarseite an ihren Platz, dann durch die echte Ansicht ersetzen
+    swipeBusy = true;
+    s.board.style.transform = `translateX(calc(${-s.dir * 100}% - ${s.dir * SWIPE_GAP}px))`;
+    s.peek.style.transform = 'translateX(0)';
+    setTimeout(() => {
+      swipeBusy = false;
+      switchTo(state.stations.indexOf(current()) + s.dir, false, false);
+    }, ms);
+  }
+  boards.addEventListener('pointerup', (e) => endSwipe(e, false));
+  boards.addEventListener('pointercancel', (e) => endSwipe(e, true));
+  boards.addEventListener('click', (e) => {
+    if (performance.now() < suppressClickUntil) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
 
   tabs.addEventListener('click', (e) => {
     const tab = e.target.closest('[data-tab]');

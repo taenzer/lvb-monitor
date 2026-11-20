@@ -51,8 +51,8 @@ Schneller Test ohne Anfragen an die LVB: `sh test/smoke.sh` (oder `APP_VERSION=1
 - **Teilen**: Kopiert die aktuelle URL in die Zwischenablage. Auf dem Handy öffnet sich
   stattdessen das Teilen-Menü.
 - **Lokale Daten löschen** (Fußzeile, unter Impressum/Datenschutz): Entfernt nach einer Rückfrage alles, was die
-  Seite auf dem Gerät gespeichert hat (alle `localStorage`-Einträge mit `lvb-monitor.`, auch
-  aus älteren Versionen), und leert die Adresszeile. Geteilte Links und Lesezeichen
+  Seite auf dem Gerät gespeichert hat (alle `localStorage`-Einträge mit `lvb-monitor.`),
+  und leert die Adresszeile. Geteilte Links und Lesezeichen
   funktionieren weiter, weil sie ihr Setup selbst enthalten.
 - **Kopfzeile**: Unter „Abfahrten“ steht der Live-Status („Live · gerade eben“, bei
   Verbindungsproblemen „Stand 17:05“). Der Knopf ↻ daneben lädt sofort neu, statt auf den
@@ -125,7 +125,7 @@ Skripte, es gibt also auch keine Anfragen an Dritte.
 Das komplette Setup steht als kompakter Code im Fragment der URL (der Teil hinter `#`):
 
 ```
-/#BAEAMsgAABdIYXVwdGJhaG5ob2YgKFRyYW0vQnVzKQAsUQBFCUhvaGUgU3RyLgEPg-EMSW4gZGllIFN0YWR0ADLKAAANQXVndXN0dXNwbGF0eg
+/#AQEAMsgAABdIYXVwdGJhaG5ob2YgKFRyYW0vQnVzKQAsUQBFCUhvaGUgU3RyLgEPg-EMSW4gZGllIFN0YWR0ADLKAAANQXVndXN0dXNwbGF0eg
 ```
 
 (Hauptbahnhof; Hohe Str. als Favorit mit 5 min Fußweg und der Richtung „In die Stadt“;
@@ -144,8 +144,8 @@ Das Format ist Base64url eines kleinen Binärformats (Details in `encodeSetup()`
 `public/index.html`):
 
 ```
-Byte 0: Formatversion (4; Links der Versionen 1–3 werden weiter gelesen)
-Byte 1: Index des Favoriten (fehlt in Version 1 → erste Haltestelle)
+Byte 0: Formatversion (1; andere Versionen werden abgelehnt)
+Byte 1: Index des Favoriten
 je Haltestelle:
   3 Byte  ID (uint24, 7-stellig mit führenden Nullen)
   1 Byte  Flags: Bit 0–4 Verkehrsmittel (t,b,s,z,r; 0 = alle)
@@ -154,7 +154,6 @@ je Haltestelle:
   1 Byte  Extra: Bit 0–5 Fußweg in Minuten, 0–60 (0 = aus)
                  Bit 6   eigene Richtungsnamen folgen
                  Bit 7   ausgeblendete Richtungen folgen
-                 (fehlt vor Version 3; in Version 3 nur Fußweg)
   [1 Byte Zeilenzahl]
   1 Byte Länge + Name (UTF-8)
   [1 Byte Anzahl Linien + je Linie: 1 Byte Länge + Text]
@@ -166,7 +165,7 @@ Kaputte, abgeschnittene oder unbekannte Codes führen zur leeren Startseite bzw.
 gespeicherten Setup, nie zu einem Absturz.
 
 **Keine Daten auf dem Server.** Browser schicken das URL-Fragment nie an den Server.
-Das Setup liegt nur im Link und im `localStorage` des Geräts (Schlüssel `lvb-monitor.setup.v2`).
+Das Setup liegt nur im Link und im `localStorage` des Geräts (Schlüssel `lvb-monitor.setup`).
 Linienfilter wirken nur im Browser; der Server erfährt nur Haltestellen-ID und Verkehrsmittel.
 
 Wie die Seite URL und lokalen Speicher zusammenbringt:

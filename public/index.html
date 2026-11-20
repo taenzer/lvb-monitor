@@ -595,7 +595,7 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = 'lvb-monitor.setup.v2';
+  const STORAGE_KEY = 'lvb-monitor.setup'; // enthält den Link-Code, die Formatversion steckt darin
   const POLL_MS = 30_000;       // Daten neu laden
   const RENDER_MS = 5_000;      // Countdown aktualisieren
   const REFRESH_AFTER_MS = 20_000;
@@ -733,10 +733,10 @@
   // Kein Hash im kryptografischen Sinn: ohne Server-Speicher muss der Link
   // das Setup selbst enthalten. Er ist nur kompakt, nicht geheim.
   //
-  // Byte 0: Formatversion (4; Versionen 1–3 werden weiter gelesen)
-  // Byte 1: Index des Favoriten (ab Version 2; Version 1 = erste Haltestelle)
+  // Byte 0: Formatversion (1; andere Versionen werden abgelehnt)
+  // Byte 1: Index des Favoriten
   // Danach je Haltestelle:
-  //   3 Byte ID (uint24) | 1 Byte Flags | 1 Byte Extra (ab Version 3)
+  //   3 Byte ID (uint24) | 1 Byte Flags | 1 Byte Extra
   //   | [1 Byte Zeilen] | 1 Byte Länge + Name (UTF-8)
   //   | [1 Byte Anzahl + je Linie: 1 Byte Länge + Text]
   //   | [1 Byte Anzahl + je Richtung: 3 Byte Haltepunkt-ID + 1 Byte Länge + Name]
@@ -744,9 +744,9 @@
   // Flags: Bit 0–4 Verkehrsmittel (t,b,s,z,r; 0 = alle), Bit 5–6 Linienmodus
   //        (0 alle, 1 nur, 2 alle außer), Bit 7 Zeilen weicht vom Standard ab.
   // Extra: Bit 0–5 Fußweg in min (0 = aus), Bit 6 eigene Richtungsnamen folgen,
-  //        Bit 7 ausgeblendete Richtungen folgen (in Version 3 war das ganze Byte der Fußweg).
+  //        Bit 7 ausgeblendete Richtungen folgen.
 
-  const FORMAT = 4;
+  const FORMAT = 1;
   const utf8 = new TextEncoder();
   const fromUtf8 = new TextDecoder('utf-8', { fatal: true });
 
@@ -802,8 +802,7 @@
     const list = [];
     let bytes;
     try { bytes = fromB64url(str); } catch { return list; }
-    const version = bytes[0];
-    if (!(version >= 1 && version <= FORMAT)) return list;
+    if (bytes[0] !== FORMAT) return list;
     let p = 1;
     const take = (n) => {
       if (p + n > bytes.length) throw new Error('abgeschnitten');
@@ -813,12 +812,11 @@
     };
     let fav = 0;
     try {
-      if (version >= 2) fav = take(1)[0];
+      fav = take(1)[0];
       while (p < bytes.length) {
-        const [a, b, c, flags] = take(4);
+        const [a, b, c, flags, extra] = take(5);
         const id = (a << 16) | (b << 8) | c;
-        const extra = version >= 3 ? take(1)[0] : 0;
-        const walk = clampWalk(version >= 4 ? extra & 63 : extra);
+        const walk = clampWalk(extra & 63);
         const rows = flags & 128 ? clampRows(take(1)[0]) : DEFAULT_ROWS;
         const name = fromUtf8.decode(take(take(1)[0])).trim().slice(0, 80);
         const mode = LINE_MODES[(flags >> 5) & 3] ?? 'all';
@@ -827,7 +825,7 @@
           for (let n = take(1)[0]; n > 0; n--) lines.push(fromUtf8.decode(take(take(1)[0])));
         }
         const dirNames = {};
-        if (version >= 4 && extra & 64) {
+        if (extra & 64) {
           for (let n = take(1)[0]; n > 0; n--) {
             const [x, y, z] = take(3);
             const stop = String((x << 16) | (y << 8) | z).padStart(7, '0');
@@ -836,7 +834,7 @@
           }
         }
         const hiddenDirs = [];
-        if (version >= 4 && extra & 128) {
+        if (extra & 128) {
           for (let n = take(1)[0]; n > 0; n--) {
             const [x, y, z] = take(3);
             hiddenDirs.push(String((x << 16) | (y << 8) | z).padStart(7, '0'));
@@ -1265,7 +1263,8 @@
       </svg>
       <h2>Deine Abfahrten, live</h2>
       <p>Füge Haltestellen hinzu und sieh auf einen Blick, wann Tram, Bus und S-Bahn fahren, mit Verspätungen in Echtzeit.</p>
-      <button class="btn primary" type="button" data-act="add">${icon('plus')}Haltestelle hinzufügen</button>    </section>`;
+      <button class="btn primary" type="button" data-act="add">${icon('plus')}Haltestelle hinzufügen</button>
+    </section>`;
 
   function renderTabs() {
     const tabs = $('tabs');
@@ -1614,7 +1613,7 @@
   wipeDialog.addEventListener('click', (e) => { if (e.target === wipeDialog) wipeDialog.close(); }); // Klick daneben
   $('wipe-ok').addEventListener('click', () => {
     try {
-      for (const k of Object.keys(localStorage)) if (k.startsWith('lvb-monitor.')) localStorage.removeItem(k); // auch ältere Versionen
+      for (const k of Object.keys(localStorage)) if (k.startsWith('lvb-monitor.')) localStorage.removeItem(k); // alle Einträge der App
     } catch { /* kein Speicher verfügbar: nichts zu löschen */ }
     Object.assign(state, { stations: [], active: null, shared: false, editing: false });
     state.feeds.clear();
